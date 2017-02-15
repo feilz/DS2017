@@ -1,0 +1,5 @@
+# How to build Debian package
+
+apt-get install devscripts
+debuilb -us -uc -b
+dpkg -i ../<package_name>.deb
