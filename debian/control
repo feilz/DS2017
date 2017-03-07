@@ -1,7 +1,8 @@
 Source: dschat
+Section: python
 Maintainer: Antti Husa <antti.husa@student.oulu.fi>
-Build-Depends-Indep: python (>=2.7.0)
-Standards-Version: 3.9.3
+Build-Depends-Indep: debhelper (>= 9), python (>=2.7.0)
+Standards-Version: 3.9.8
 X-Python-Version: >= 2.7
 
 
