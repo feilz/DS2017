@@ -8,6 +8,6 @@ setup(name="ds2017",
     author="",
     author_email="",
     package_dir={"dschat":"dschat"},
-    packages=["dschat", "dschat/daemon", "dschat/flask/app"],
+    packages=["dschat", "dschat/daemon", "dschat/flask", "dschat/flask/app"],
     scripts=["bin/dschat"]
 )
