@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 
-from dschat import create_app,socketio
+from dschat.main import app
 
-
-app=create_app(debug=True)
 
 if __name__ == "__main__":
-    socketio.run(app)
+    app.run(debug=True)
