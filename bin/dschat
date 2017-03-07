@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from dschat.daemon import ChatDaemon
+from dschat.daemon.chat_daemon import ChatDaemon
 
 
 if __name__ == "__main__":
