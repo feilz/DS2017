@@ -4,6 +4,7 @@ import time
 import socket
 import argparse
 import threading
+import signal
 
 from dschat.flask import app
 
@@ -17,14 +18,17 @@ class ChatDaemon:
         self.ip = self.args["ip"]
         self.secret = self.args["secret"]
 
+
         self._tlock = threading.Lock()
 
         self._t_comm = threading.Thread(target=self.broadcast)
+        self._t_comm.daemon=True
         self._t_comm.start()
+        while True:
+            time.sleep(1)
 
     def _exit(self, exit_code):
         self.running = False
-
         if hasattr(self, "_t_comm"):
             self._t_comm.join()
         sys.exit(exit_code)
