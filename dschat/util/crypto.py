@@ -29,3 +29,14 @@ def decrypt(message, key):
     f = Fernet(key)
 
     return f.decrypt(bytes(message))
+
+
+def hash(data):
+    digest = hashes.Hash(hashes.SHA1(), backend=default_backend())
+    digest.update(data)
+
+    return digest.finalize()
+
+
+def verify(data, data_hash):
+    return hash(data) == data_hash
