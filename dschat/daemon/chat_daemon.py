@@ -49,31 +49,46 @@ class ChatDaemon:
             self._exit(1)
 
     def broadcast(self):
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.bind((self.ip, self.broadcast_port))
-        s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        s.setblocking(0)
+        bs = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        bs.bind(("10.1.64.255", self.broadcast_port))
+        bs.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        bs.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        bs.setblocking(0)
+
+        ls = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        ls.bind((self.ip, self.broadcast_port))
+        ls.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        ls.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        ls.setblocking(0)
 
         magic = "DEADBEEF"
-        discovery = "new|%s" % self.ip
+        discovery = "whoismaster|%s" % self.ip
 
         while self.running:
             try:
-                s.sendto(magic + discovery, ('<broadcast>', self.broadcast_port))
+                bs.sendto(magic + "|" + discovery, ("10.1.64.255", self.broadcast_port))
             except socket.error as e:
-                print("AAA")
                 print(e)
                 self._exit(1)
 
             time.sleep(1)
 
             try:
-                data, addr = s.recvfrom(self.broadcast_buffer)
+                data, addr = bs.recvfrom(self.broadcast_buffer)
             except socket.error as e:
                 continue
 
             print(data)
             print(addr)
+
+            if data:
+                message = data.split("|")
+
+                if message[0] == magic and message[1] == "whoismaster":
+                    if message[2] != self.ip:
+                        print("FOUND NEW NODE AT %s" % message[2])
+                        ls.sendto("HELLO THERE", addr)
+
             #result = select.select([s], [], [])
             #print(result)
             # If response
