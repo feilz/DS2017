@@ -14,9 +14,14 @@ from dschat.util.crypto import build_secret_key, encrypt
 
 class ChatDaemon:
     def __init__(self):
+        self.publishers=[]
+        self.starttime=time.time()
         self.running = True
         self.broadcast_port = 5000
+        self.zmq_pub_port=5001
+        
         self.broadcast_buffer = 1024
+        self.master=None
         
         self._parse_args()
         self.ip = self.args["ip"]
@@ -66,7 +71,7 @@ class ChatDaemon:
 
         while self.running:
             try:
-                bs.sendto(magic + "|" + discovery, ("10.1.64.255", self.broadcast_port))
+                bs.sendto(magic + "|" + discovery+"|"+"%d" %self.uptime(), ("10.1.64.255", self.zmq_pub_port))
             except socket.error as e:
                 print(e)
                 self._exit(1)
@@ -77,7 +82,8 @@ class ChatDaemon:
                 data, addr = bs.recvfrom(self.broadcast_buffer)
             except socket.error as e:
                 continue
-
+            if data, addr:
+                self.communication(data,addr,s)    
             print(data)
             print(addr)
 
@@ -86,6 +92,9 @@ class ChatDaemon:
 
                 if message[0] == magic and message[1] == "whoismaster":
                     if message[2] != self.ip:
+                        if self.uptime()<message[3]:
+                            self.connectzmq(addr)
+
                         print("FOUND NEW NODE AT %s" % message[2])
                         ls.sendto("HELLO THERE", addr)
 
@@ -94,6 +103,36 @@ class ChatDaemon:
             # If response
             # Set up ZMQ
             # Fall back here means that if ZMQ disconnects, it will loop
+
+
+    def uptime(self):
+        return time.time()-self.starttime
+
+        #every node is a publisher, and every node subscribes to every node.
+    def pubzmq(self):
+        c=zmq.Context()
+        s=c.socket(zmq.PUB)
+        s.bind("tcp://*:%s" %(self.zmq_pub_port))
+        while self.running:
+            #check your local database, incase you receive a new input, send it to all subscribers
+            #newmsg=database.checkforUpdates()
+            #chatroom,message=newmsg.split("|")
+            #s.send("%s|%s" %(chatroom,message))
+            #print "published: %s|%s" %(chatroom,message)
+
+    def subzmq(self,addr):
+        context = zmq.Context()
+        s = context.socket(zmq.SUB)
+        for addr in self.publishers:
+            s.connect("tcp://%s:%s",addr[0],addr[1])
+        while self.running:
+            msg=s.recv()
+            chatroom,message=msg.split("|")
+            
+            #TODO: joku tän tyyppinen metodi tarvitaan tähän loppuun.
+            #database.write(chatroom,message)
+
+
 
     def run(self):
         app.run(host="0.0.0.0", debug=True)
