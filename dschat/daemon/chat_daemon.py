@@ -82,7 +82,7 @@ class ChatDaemon:
                 data, addr = bs.recvfrom(self.broadcast_buffer)
             except socket.error as e:
                 continue
-            if data, addr:
+            if (data, addr):
                 self.communication(data,addr,s)    
             print(data)
             print(addr)
@@ -113,7 +113,7 @@ class ChatDaemon:
         c=zmq.Context()
         s=c.socket(zmq.PUB)
         s.bind("tcp://*:%s" %(self.zmq_pub_port))
-        while self.running:
+        #while self.running:
             #check your local database, incase you receive a new input, send it to all subscribers
             #newmsg=database.checkforUpdates()
             #chatroom,message=newmsg.split("|")
