@@ -1,7 +1,10 @@
 from flask import session
 from flask_socketio import emit, join_room, leave_room
 from .. import socketio
+import datetime
 
+def create_tstamp():
+    return '{:%Y-%m-%d %H:%M:%S}: '.format(datetime.datetime.now())
 
 @socketio.on('joined', namespace='/chat')
 def joined(message):
@@ -9,7 +12,7 @@ def joined(message):
     A status message is broadcast to all people in the room."""
     room = session.get('room')
     join_room(room)
-    emit('status', {'msg': session.get('name') + ' has entered the room.'}, room=room)
+    emit('status', {'msg': create_tstamp() + session.get('name') + ' has entered the room.'}, room=room)
 
 
 @socketio.on('text', namespace='/chat')
@@ -17,7 +20,7 @@ def text(message):
     """Sent by a client when the user entered a new message.
     The message is sent to all people in the room."""
     room = session.get('room')
-    emit('message', {'msg': session.get('name') + ':' + message['msg']}, room=room)
+    emit('message', {'msg': create_tstamp() + session.get('name') + ':' + message['msg']}, room=room)
 
 
 @socketio.on('left', namespace='/chat')
@@ -26,5 +29,5 @@ def left(message):
     A status message is broadcast to all people in the room."""
     room = session.get('room')
     leave_room(room)
-    emit('status', {'msg': session.get('name') + ' has left the room.'}, room=room)
+    emit('status', {'msg': create_tstamp() + session.get('name') + ' has left the room.'}, room=room)
 
