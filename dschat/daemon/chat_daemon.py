@@ -8,7 +8,7 @@ import argparse
 import threading
 import signal
 
-from dschat.flask import app
+from dschat.flask.app import app, socketio
 from dschat.util.crypto import build_secret_key, encrypt
 
 
@@ -27,15 +27,15 @@ class ChatDaemon:
         self.ip = self.args["ip"]
         self.secret = self.args["secret"]
 
-        self._tlock = threading.Lock()
+        #self._tlock = threading.Lock()
 
-        self._t_comm = threading.Thread(target=self.broadcast)
-        self._t_comm.daemon = True
-        self._t_comm.start()
+        #self._t_comm = threading.Thread(target=self.broadcast)
+        #self._t_comm.daemon = True
+        #self._t_comm.start()
 
-        while True:
-            time.sleep(1)
-
+        #while True:
+        #    time.sleep(1)
+        socketio.run(app, host='0.0.0.0',debug=True)
     def _exit(self, exit_code):
         self.running = False
         if hasattr(self, "_t_comm"):
