@@ -112,10 +112,10 @@ class ChatDaemon:
 class zmqhandlers:
 	
 	def __init__(self,ip,port):
-		context=zmq.Context()
-		self.pub=context.socket(zmq.PUB)
+		self.context=zmq.Context()
+		self.pub=self.context.socket(zmq.PUB)
 		self.pub.bind("tcp://%s:%s" %(ip,port))
-		self.sub=context.socket(zmq.SUB)
+		self.sub=self.context.socket(zmq.SUB)
 		j = multiprocessing.Process(target=self.receive)
 		j.start()
 
@@ -126,7 +126,11 @@ class zmqhandlers:
         self.sub.connect("tcp://%s:%s" %(addr[0],addr[1]))
 
     def receive(self):
-    	while True:
+    	while ChatDaemon.running:
     		msg = self.sub.recv()
     		print msg
     		#database.write(msg)
+    #def __exit___(self):
+    #	self.context.term()
+
+    #def __enter___(self):
