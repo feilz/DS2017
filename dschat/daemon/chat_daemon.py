@@ -8,7 +8,7 @@ import argparse
 import threading
 import signal
 
-from dschat.flask.app.main import app
+from dschat.flask.app.new_main import app, socketio
 #from dschat.util.crypto import build_secret_key, encrypt
 
 
@@ -135,4 +135,5 @@ class ChatDaemon:
 
 
     def run(self):
-        app.run(host="0.0.0.0", debug=True)
+        #app.run(host="0.0.0.0", debug=True)
+        socketio.run(app, host="0.0.0.0", debug=True)
