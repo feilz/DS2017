@@ -6,7 +6,7 @@ import socket
 import select
 import argparse
 import threading
-import signal
+import multiprocessing
 
 from dschat.flask.app.new_main import app, socketio
 #from dschat.util.crypto import build_secret_key, encrypt
@@ -14,19 +14,18 @@ from dschat.flask.app.new_main import app, socketio
 
 class ChatDaemon:
     def __init__(self):
-        self.publishers=[]
         self.starttime=time.time()
         self.running = True
-        self.broadcast_port = 5000
-        self.zmq_pub_port=5001
         
         self.broadcast_buffer = 1024
         self.master=None
+        self.zmq_pub_port=5001
         
         self._parse_args()
         self.ip = self.args["ip"]
         self.secret = self.args["secret"]
 
+        zmqhandlers(self.ip,self.zmq_pub_port)
         #self._tlock = threading.Lock()
 
         #self._t_comm = threading.Thread(target=self.broadcast)
@@ -35,6 +34,7 @@ class ChatDaemon:
 
         #while True:
         #    time.sleep(1)
+
         self.run()
     def _exit(self, exit_code):
         self.running = False
@@ -82,7 +82,7 @@ class ChatDaemon:
                 data, addr = bs.recvfrom(self.broadcast_buffer)
             except socket.error as e:
                 continue
-            if (data, addr):
+           if (data, addr):
                 self.communication(data,addr,s)    
             print(data)
             print(addr)
@@ -92,9 +92,7 @@ class ChatDaemon:
 
                 if message[0] == magic and message[1] == "whoismaster":
                     if message[2] != self.ip:
-                        if self.uptime()<message[3]:
-                            self.connectzmq(addr)
-
+                    	zmqhandlers.connectsub(addr)
                         print("FOUND NEW NODE AT %s" % message[2])
                         ls.sendto("HELLO THERE", addr)
 
@@ -108,32 +106,32 @@ class ChatDaemon:
     def uptime(self):
         return time.time()-self.starttime
 
-        #every node is a publisher, and every node subscribes to every node.
-    def pubzmq(self):
-        c=zmq.Context()
-        s=c.socket(zmq.PUB)
-        s.bind("tcp://*:%s" %(self.zmq_pub_port))
-        #while self.running:
-            #check your local database, incase you receive a new input, send it to all subscribers
-            #newmsg=database.checkforUpdates()
-            #chatroom,message=newmsg.split("|")
-            #s.send("%s|%s" %(chatroom,message))
-            #print "published: %s|%s" %(chatroom,message)
-
-    def subzmq(self,addr):
-        context = zmq.Context()
-        s = context.socket(zmq.SUB)
-        for addr in self.publishers:
-            s.connect("tcp://%s:%s",addr[0],addr[1])
-        while self.running:
-            msg=s.recv()
-            chatroom,message=msg.split("|")
-            
-            #TODO: joku tän tyyppinen metodi tarvitaan tähän loppuun.
-            #database.write(chatroom,message)
-
-
-
     def run(self):
         #app.run(host="0.0.0.0", debug=True)
         socketio.run(app, host="0.0.0.0", debug=True)
+
+class zmqhandlers:
+	
+	def __init__(self,ip,port):
+		self.context=zmq.Context()
+		self.pub=self.context.socket(zmq.PUB)
+		self.pub.bind("tcp://%s:%s" %(ip,port))
+		self.sub=self.context.socket(zmq.SUB)
+		j = multiprocessing.Process(target=self.receive)
+		j.start()
+
+	def publish(self,msg):
+        self.pub.send(msg)
+
+    def connectsub(self,addr):
+        self.sub.connect("tcp://%s:%s" %(addr[0],addr[1]))
+
+    def receive(self):
+    	while ChatDaemon.running:
+    		msg = self.sub.recv()
+    		print msg
+    		#database.write(msg)
+    #def __exit___(self):
+    #	self.context.term()
+
+    #def __enter___(self):
