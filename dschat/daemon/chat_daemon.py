@@ -8,8 +8,8 @@ import argparse
 import threading
 import multiprocessing
 
-from dschat.flask import app, socketio
-from dschat.util.crypto import build_secret_key, encrypt
+from dschat.flask.app.main import app
+#from dschat.util.crypto import build_secret_key, encrypt
 
 
 class ChatDaemon:
@@ -34,9 +34,8 @@ class ChatDaemon:
 
         #while True:
         #    time.sleep(1)
-        #app = create_app(debug=True)
-        socketio.run(app, host='0.0.0.0',debug=True)
 
+        self.run()
     def _exit(self, exit_code):
         self.running = False
         if hasattr(self, "_t_comm"):
@@ -83,7 +82,7 @@ class ChatDaemon:
                 data, addr = bs.recvfrom(self.broadcast_buffer)
             except socket.error as e:
                 continue
-            if data and addr:
+           if (data, addr):
                 self.communication(data,addr,s)    
             print(data)
             print(addr)
