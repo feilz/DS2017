@@ -11,9 +11,16 @@ import os
 from sqlalchemy.engine import create_engine
 
 import datetime
+import time
 
 def create_tstamp():
-    return '{:%Y-%m-%d %H:%M:%S}: '.format(datetime.datetime.now())
+    return datetime.datetime.now()
+    
+def format_datetime(timestamp):
+    return '{:%Y-%m-%d %H:%M:%S}: '.format(timestamp)
+    
+def get_unix_time(timestamp):
+    return time.mktime(timestamp.timetuple())
 
 engine = create_engine('sqlite:///db/ds17.db', echo=True)
 
@@ -29,6 +36,7 @@ socketio = SocketIO()
 
 # Get current working directory and join it with the location of chat templates
 tmpl_dir = os.path.join(os.getcwd(), 'dschat/flask/app/templates')
+#tmpl_dir = os.path.join(os.getcwd(), 'templates')
 
 app = Flask(__name__, template_folder=tmpl_dir)
 app.debug = True
@@ -70,6 +78,8 @@ def joined(message):
     join_room(room)
     username = session.get('name')
     tstamp = create_tstamp()
+    datetime = format_datetime(tstamp)
+    unix_time = get_unix_time(tstamp)
     message = ' has entered the room.'
     
     #Database insert code
@@ -85,12 +95,12 @@ def joined(message):
     """
     INSERT INTO messages (name, timestamp, message, room) VALUES (?, ?, ?, ?);
     """,
-    username, tstamp, message, room
+    username, unix_time, message, room
     )
     
     connection.close()
     
-    emit('status', {'msg': tstamp + username + message}, room=room)
+    emit('status', {'msg': datetime + username + message}, room=room)
 
 
 @socketio.on('text', namespace='/chat')
@@ -100,6 +110,8 @@ def text(message):
     room = session.get('room')
     username = session.get('name')
     tstamp = create_tstamp()
+    datetime = format_datetime(tstamp)
+    unix_time = get_unix_time(tstamp)
     message = message['msg']
     
     #Database insert code
@@ -108,11 +120,11 @@ def text(message):
     """
     INSERT INTO messages (name, timestamp, message, room) VALUES (?, ?, ?, ?);
     """,
-    username, tstamp, message, room
+    username, unix_time, message, room
     )
     connection.close()
     
-    emit('message', {'msg': tstamp + username + ':' + message}, room=room)
+    emit('message', {'msg': datetime + username + ':' + message}, room=room)
 
 
 @socketio.on('left', namespace='/chat')
@@ -122,6 +134,8 @@ def left(message):
     room = session.get('room')
     username = session.get('name')
     tstamp = create_tstamp()
+    datetime = format_datetime(tstamp)
+    unix_time = get_unix_time(tstamp)
     message = ' has left the room.'
     leave_room(room)
     
@@ -131,12 +145,13 @@ def left(message):
     """
     INSERT INTO messages (name, timestamp, message, room) VALUES (?, ?, ?, ?);
     """,
-    username, tstamp, message, room
+    username, unix_time, message, room
     )
     connection.close()
     
-    emit('status', {'msg': tstamp + username + message}, room=room)
+    emit('status', {'msg': datetime + username + message}, room=room)
 
     
 
 socketio.init_app(app)
+#socketio.run(app, host="0.0.0.0", debug=True)
