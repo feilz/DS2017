@@ -4,7 +4,7 @@ name TEXT NOT NULL
 );
 
 CREATE TABLE messages (
-name TEXT PRIMARY KEY,
+name TEXT,
 timestamp INTEGER,
 message TEXT,
 room TEXT,
