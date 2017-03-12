@@ -8,6 +8,10 @@ from wtforms.validators import Required
 
 import os
 
+from sqlalchemy.engine import create_engine
+
+engine = create_engine('sqlite:///db/ds17.db', echo=True)
+
 class LoginForm(Form):
     """Accepts a nickname and a room."""
     name = StringField('Name', validators=[Required()])
@@ -59,6 +63,17 @@ def joined(message):
     A status message is broadcast to all people in the room."""
     room = session.get('room')
     join_room(room)
+    
+    #Database insert code
+    connection = engine.connect()
+    connection.execute(
+    """
+    INSERT INTO users (name) VALUES (?);
+    """,
+    session.get('name')
+    )
+    connection.close()
+    
     emit('status', {'msg': session.get('name') + ' has entered the room.'}, room=room)
 
 
@@ -67,6 +82,17 @@ def text(message):
     """Sent by a client when the user entered a new message.
     The message is sent to all people in the room."""
     room = session.get('room')
+    
+    #Database insert code
+    connection = engine.connect()
+    connection.execute(
+    """
+    INSERT INTO messages (name, timestamp, message, room) VALUES (?, ?, ?, ?);
+    """,
+    session.get('name'), get_timestamp(), message['msg'], room
+    )
+    connection.close()
+    
     emit('message', {'msg': session.get('name') + ':' + message['msg']}, room=room)
 
 
@@ -76,6 +102,17 @@ def left(message):
     A status message is broadcast to all people in the room."""
     room = session.get('room')
     leave_room(room)
+    
+    #Database insert code
+    connection = engine.connect()
+    connection.execute(
+    """
+    INSERT INTO messages (name, timestamp, message, room) VALUES (?, ?, ?, ?);
+    """,
+    session.get('name'), get_timestamp(), "has left the room.", room
+    )
+    connection.close()
+    
     emit('status', {'msg': session.get('name') + ' has left the room.'}, room=room)
 
     

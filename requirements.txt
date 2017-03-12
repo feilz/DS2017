@@ -14,3 +14,4 @@ eventlet>=0.17.4
 Flask-WTF>=0.9.5
 greenlet>=0.4.2
 WTForms>=1.0.5
+sqlalchemy
