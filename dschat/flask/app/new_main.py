@@ -69,7 +69,7 @@ def joined(message):
     room = session.get('room')
     join_room(room)
     username = session.get('name')
-    tstamp = get_timestamp()
+    tstamp = create_tstamp()
     message = ' has entered the room.'
     
     #Database insert code
@@ -99,7 +99,7 @@ def text(message):
     The message is sent to all people in the room."""
     room = session.get('room')
     username = session.get('name')
-    tstamp = get_timestamp()
+    tstamp = create_tstamp()
     message = message['msg']
     
     #Database insert code
@@ -121,7 +121,7 @@ def left(message):
     A status message is broadcast to all people in the room."""
     room = session.get('room')
     username = session.get('name')
-    tstamp = get_timestamp()
+    tstamp = create_tstamp()
     message = ' has left the room.'
     leave_room(room)
     
