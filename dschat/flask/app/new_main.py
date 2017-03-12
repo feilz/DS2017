@@ -10,6 +10,11 @@ import os
 
 from sqlalchemy.engine import create_engine
 
+import datetime
+
+def create_tstamp():
+    return '{:%Y-%m-%d %H:%M:%S}: '.format(datetime.datetime.now())
+
 engine = create_engine('sqlite:///db/ds17.db', echo=True)
 
 class LoginForm(Form):
@@ -63,6 +68,9 @@ def joined(message):
     A status message is broadcast to all people in the room."""
     room = session.get('room')
     join_room(room)
+    username = session.get('name')
+    tstamp = get_timestamp()
+    message = ' has entered the room.'
     
     #Database insert code
     connection = engine.connect()
@@ -70,11 +78,19 @@ def joined(message):
     """
     INSERT INTO users (name) VALUES (?);
     """,
-    session.get('name')
+    username
     )
+    
+    connection.execute(
+    """
+    INSERT INTO messages (name, timestamp, message, room) VALUES (?, ?, ?, ?);
+    """,
+    username, tstamp, message, room
+    )
+    
     connection.close()
     
-    emit('status', {'msg': session.get('name') + ' has entered the room.'}, room=room)
+    emit('status', {'msg': tstamp + username + message}, room=room)
 
 
 @socketio.on('text', namespace='/chat')
@@ -82,6 +98,9 @@ def text(message):
     """Sent by a client when the user entered a new message.
     The message is sent to all people in the room."""
     room = session.get('room')
+    username = session.get('name')
+    tstamp = get_timestamp()
+    message = message['msg']
     
     #Database insert code
     connection = engine.connect()
@@ -89,11 +108,11 @@ def text(message):
     """
     INSERT INTO messages (name, timestamp, message, room) VALUES (?, ?, ?, ?);
     """,
-    session.get('name'), get_timestamp(), message['msg'], room
+    username, tstamp, message, room
     )
     connection.close()
     
-    emit('message', {'msg': session.get('name') + ':' + message['msg']}, room=room)
+    emit('message', {'msg': tstamp + username + ':' + message}, room=room)
 
 
 @socketio.on('left', namespace='/chat')
@@ -101,6 +120,9 @@ def left(message):
     """Sent by clients when they leave a room.
     A status message is broadcast to all people in the room."""
     room = session.get('room')
+    username = session.get('name')
+    tstamp = get_timestamp()
+    message = ' has left the room.'
     leave_room(room)
     
     #Database insert code
@@ -109,11 +131,11 @@ def left(message):
     """
     INSERT INTO messages (name, timestamp, message, room) VALUES (?, ?, ?, ?);
     """,
-    session.get('name'), get_timestamp(), "has left the room.", room
+    username, tstamp, message, room
     )
     connection.close()
     
-    emit('status', {'msg': session.get('name') + ' has left the room.'}, room=room)
+    emit('status', {'msg': tstamp + username + message}, room=room)
 
     
 
