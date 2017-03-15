@@ -9,11 +9,10 @@ import threading
 import zmq
 import multiprocessing
 
-from dschat.flask.app.new_main import app, socketio
 #from dschat.util.crypto import build_secret_key, encrypt
 
 
-class ChatDaemon:
+class Connector(threading.Thread):
     def __init__(self):
         self.starttime=time.time()
         self.running = True
@@ -29,17 +28,14 @@ class ChatDaemon:
         self.ip = self.args["ip"]
         self.secret = self.args["secret"]
 
+        threading.Thread.__init__(self)
+
+    def run(self):
+        print("hello")
         #zmqhandlers(self.ip,self.zmq_pub_port)
         self._tlock = threading.Lock()
 
-        self._t_comm = threading.Thread(target=self.broadcast)
-        self._t_comm.daemon = True
-        self._t_comm.start()
-
-        #while True:
-        #    time.sleep(1)
-
-        self.run()
+        self.broadcast()
 
     def _exit(self, exit_code):
         self.running = False
@@ -60,16 +56,16 @@ class ChatDaemon:
 
     def broadcast(self):
         bs = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        bs.bind(("10.1.64.255", self.broadcast_port))
         bs.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         bs.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         bs.setblocking(0)
+        bs.bind(("10.1.64.255", self.broadcast_port))
 
         ls = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        ls.bind((self.ip, self.broadcast_port))
         ls.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         ls.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         ls.setblocking(0)
+        ls.bind((self.ip, self.broadcast_port))
 
         magic = "DEADBEEF"
         discovery = "whoismaster|%s" % self.ip
