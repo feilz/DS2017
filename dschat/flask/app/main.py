@@ -25,6 +25,8 @@ thread = None
 def background_thread():
     with Connector() as c:
         while True:
+            c.connect_to_cluster()
+
             socketio.sleep(1)
 
             message = next(c.next_message())
@@ -34,10 +36,6 @@ def background_thread():
                     with app.app_context():
                         socketio.emit("message", message["content"], room=message["room"], namespace="/chat")
 
-    #c = Connector()
-    #while True:
-    #    c.run()
-    #    socketio.sleep(1)
 
 @socketio.on('joined', namespace='/chat')
 def joined(message):
@@ -107,7 +105,6 @@ def left(message):
 @socketio.on('connect', namespace='/chat')
 def test_connect():
     global thread
-    print("AAAAAAAA")
 
     if not thread:
         thread = socketio.start_background_task(target=background_thread)

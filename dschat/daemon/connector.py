@@ -1,16 +1,11 @@
 
-import os
 import sys
 import time
 import socket
-import select
 import argparse
-import threading
-import zmq
-import multiprocessing
 
 from dschat.util.timeutils import *
-#from dschat.util.crypto import build_secret_key, encrypt
+from dschat.daemon.zmq import ZMQ
 
 
 class Connector():
@@ -48,17 +43,14 @@ class Connector():
 
             yield message
 
-    def run(self):
-        print("hello")
-        #zmqhandlers(self.ip,self.zmq_pub_port)
-        self._tlock = threading.Lock()
+    def connect_to_cluster(self, master=None):
+        if not master:
+            master = self.broadcast()
 
-        self.broadcast()
+        self.zmq = ZMQ()
 
     def _exit(self, exit_code):
         self.running = False
-        if hasattr(self, "_t_comm"):
-            self._t_comm.join()
         sys.exit(exit_code)
 
     def _parse_args(self):
@@ -131,34 +123,3 @@ class Connector():
 
     def uptime(self):
         return time.time()-self.starttime
-
-    def run(self):
-        self.broadcast()
-        #app.run(host="0.0.0.0", debug=True)
-        #socketio.run(app, host="0.0.0.0", debug=True)
-
-class zmqhandlers:
-
-    def __init__(self,ip,port):
-        self.context=zmq.Context()
-        self.pub=self.context.socket(zmq.PUB)
-        self.pub.bind("tcp://%s:%s" %(ip,port))
-        self.sub=self.context.socket(zmq.SUB)
-        j = multiprocessing.Process(target=self.receive)
-        j.start()
-
-    def publish(self,msg):
-        self.pub.send(msg)
-
-    def connectsub(self,addr):
-        self.sub.connect("tcp://%s:%s" %(addr[0],addr[1]))
-
-    def receive(self):
-        while ChatDaemon.running:
-            msg = self.sub.recv()
-            print msg
-            #database.write(msg)
-    #def __exit___(self):
-    #	self.context.term()
-
-    #def __enter___(self):
