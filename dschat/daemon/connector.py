@@ -33,15 +33,18 @@ class Connector():
 
     def next_message(self):
         while True:
-            tstamp = create_timestamp()
-            datetime = ts_to_datetime(tstamp)
-            unix_time = ts_to_unix(tstamp)
+            #tstamp = create_timestamp()
+            #datetime = ts_to_datetime(tstamp)
+            #unix_time = ts_to_unix(tstamp)
 
-            message = {}
-            message["content"] = {"msg": "This is a test message"}
-            message["room"] = "asd"
+            #message = {}
+            zmqmsg=self.zmq.sub.recv()
+            #message['datetime']=zmqmsg['datetime']
 
-            yield message
+            #message["content"] = {"msg": "This is a test message"}
+            #message["room"] = "asd"
+            
+            yield zmqmsg
 
     def connect_to_cluster(self, master=None):
         if not master:
