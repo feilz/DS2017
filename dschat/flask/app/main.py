@@ -23,10 +23,21 @@ thread = None
 
 
 def background_thread():
-    c = Collector()
-    while True:
-        c.run()
-        socketio.sleep(1)
+    with Connector() as c:
+        while True:
+            socketio.sleep(1)
+
+            message = next(c.next_message())
+
+            if message:
+                with app.test_request_context('/'):
+                    with app.app_context():
+                        socketio.emit("message", message["content"], room=message["room"], namespace="/chat")
+
+    #c = Connector()
+    #while True:
+    #    c.run()
+    #    socketio.sleep(1)
 
 @socketio.on('joined', namespace='/chat')
 def joined(message):

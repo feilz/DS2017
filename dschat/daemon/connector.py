@@ -9,10 +9,11 @@ import threading
 import zmq
 import multiprocessing
 
+from dschat.util.timeutils import *
 #from dschat.util.crypto import build_secret_key, encrypt
 
 
-class Connector(threading.Thread):
+class Connector():
     def __init__(self):
         self.starttime=time.time()
         self.running = True
@@ -28,7 +29,24 @@ class Connector(threading.Thread):
         self.ip = self.args["ip"]
         self.secret = self.args["secret"]
 
-        threading.Thread.__init__(self)
+    def __enter__(self):
+        #self.broadcast()
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        pass
+
+    def next_message(self):
+        while True:
+            tstamp = create_timestamp()
+            datetime = ts_to_datetime(tstamp)
+            unix_time = ts_to_unix(tstamp)
+
+            message = {}
+            message["content"] = {"msg": "This is a test message"}
+            message["room"] = "asd"
+
+            yield message
 
     def run(self):
         print("hello")
@@ -115,8 +133,9 @@ class Connector(threading.Thread):
         return time.time()-self.starttime
 
     def run(self):
+        self.broadcast()
         #app.run(host="0.0.0.0", debug=True)
-        socketio.run(app, host="0.0.0.0", debug=True)
+        #socketio.run(app, host="0.0.0.0", debug=True)
 
 class zmqhandlers:
 
