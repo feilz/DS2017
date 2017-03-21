@@ -3,3 +3,4 @@
 build
 debian/dschat*
 debian/files
+dschat_database.db

@@ -1,19 +1,14 @@
 
-import os
 import sys
 import time
 import socket
-import select
 import argparse
-import threading
-import zmq
-import multiprocessing
 
-from dschat.flask.app.new_main import app, socketio
-#from dschat.util.crypto import build_secret_key, encrypt
+from dschat.util.timeutils import *
+from dschat.daemon.zmq import ZMQ
 
 
-class ChatDaemon:
+class Connector():
     def __init__(self):
         self.starttime=time.time()
         self.running = True
@@ -29,22 +24,39 @@ class ChatDaemon:
         self.ip = self.args["ip"]
         self.secret = self.args["secret"]
 
-        #zmqhandlers(self.ip,self.zmq_pub_port)
-        self._tlock = threading.Lock()
+    def __enter__(self):
+        #self.broadcast()
+        return self
 
-        self._t_comm = threading.Thread(target=self.broadcast)
-        self._t_comm.daemon = True
-        self._t_comm.start()
+    def __exit__(self, *args, **kwargs):
+        pass
 
-        #while True:
-        #    time.sleep(1)
+    def next_message(self):
+        while True:
+            zmqmsg=None
+            #tstamp = create_timestamp()
+            #datetime = ts_to_datetime(tstamp)
+            #unix_time = ts_to_unix(tstamp)
+            try:
+                #message = {}
+                zmqmsg=self.zmq.sub.recv(flags=zmq.NOBLOCK)
+                #message['datetime']=zmqmsg['datetime']
 
-        self.run()
+                #message["content"] = {"msg": "This is a test message"}
+                #message["room"] = "asd"
+            except zmq.Again as e:
+                pass
+           
+            yield zmqmsg
+
+    def connect_to_cluster(self, master=None):
+        if not master:
+            master = self.broadcast()
+
+        self.zmq = ZMQ()
 
     def _exit(self, exit_code):
         self.running = False
-        if hasattr(self, "_t_comm"):
-            self._t_comm.join()
         sys.exit(exit_code)
 
     def _parse_args(self):
@@ -60,16 +72,16 @@ class ChatDaemon:
 
     def broadcast(self):
         bs = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        bs.bind(("10.1.64.255", self.broadcast_port))
         bs.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         bs.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         bs.setblocking(0)
+        bs.bind(("10.1.64.255", self.broadcast_port))
 
         ls = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        ls.bind((self.ip, self.broadcast_port))
         ls.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         ls.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         ls.setblocking(0)
+        ls.bind((self.ip, self.broadcast_port))
 
         magic = "DEADBEEF"
         discovery = "whoismaster|%s" % self.ip
@@ -117,33 +129,3 @@ class ChatDaemon:
 
     def uptime(self):
         return time.time()-self.starttime
-
-    def run(self):
-        #app.run(host="0.0.0.0", debug=True)
-        socketio.run(app, host="0.0.0.0", debug=True)
-
-class zmqhandlers:
-
-    def __init__(self,ip,port):
-        self.context=zmq.Context()
-        self.pub=self.context.socket(zmq.PUB)
-        self.pub.bind("tcp://%s:%s" %(ip,port))
-        self.sub=self.context.socket(zmq.SUB)
-        j = multiprocessing.Process(target=self.receive)
-        j.start()
-
-    def publish(self,msg):
-        self.pub.send(msg)
-
-    def connectsub(self,addr):
-        self.sub.connect("tcp://%s:%s" %(addr[0],addr[1]))
-
-    def receive(self):
-        while ChatDaemon.running:
-            msg = self.sub.recv()
-            print msg
-            #database.write(msg)
-    #def __exit___(self):
-    #	self.context.term()
-
-    #def __enter___(self):
