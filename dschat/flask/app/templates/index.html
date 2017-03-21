@@ -1,14 +1,31 @@
 <html>
     <head>
         <title>Flask-SocketIO-Chat</title>
+        <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.6/socket.io.min.js"></script>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
     </head>
     <body>
-        <h1>Flask-SocketIO-Chat</h1>
-        <form method="POST">
-            {{ form.hidden_tag() }}
-            {{ form.name.label }}: {{ form.name() }} {% for error in form.name.errors %}{{ error }}{% endfor %}<br>
-            {{ form.room.label }}: {{ form.room() }} {% for error in form.room.errors %}{{ error }}{% endfor %}<br>
-            {{ form.submit() }}
-        </form>
+        <div class="container"><br><br></div>
+        <div class="container text-center" id="outer_container" >
+            <div class="well well-lg" style="border-color:blue;background-color:2EFE2E">
+                <h1>Flask</h1>
+                <h1>SocketIO</h1>
+                <h1>Chat</h1>
+
+
+                <div class="well well-md" id="inner_container" style="border-color:blue;background-color:yellow">
+                    <div class="col align-self-center" >
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        {{ form.name.label }}: {{ form.name() }} {% for error in form.name.errors %}{{ error }}{% endfor %}<br>
+                        {{ form.room.label }}: {{ form.room() }} {% for error in form.room.errors %}{{ error }}{% endfor %}<br>
+                        {{ form.submit() }}
+                    </form>
+                    </div>
+                </div>
+            </div>
+        </div>
     </body>
 </html>
