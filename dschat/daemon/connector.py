@@ -49,11 +49,11 @@ class Connector():
            
             yield zmqmsg
 
-    def connect_to_cluster(self, master=None):
+    def connect(self, master=None):
         if not master:
             master = self.broadcast()
 
-        self.zmq = ZMQ()
+        self.zmq = ZMQ(master, self.zmq_pub_port)
 
     def _exit(self, exit_code):
         self.running = False

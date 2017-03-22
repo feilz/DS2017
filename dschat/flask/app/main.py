@@ -3,7 +3,7 @@ from gevent import monkey
 monkey.patch_all()
 
 from threading import Thread
-from flask import Flask, render_template, session, request
+from flask import Flask, render_template, session, request, g
 from flask_socketio import emit, join_room, leave_room, SocketIO, disconnect
 
 from dschat.flask.app.routes import main
@@ -25,7 +25,9 @@ thread = None
 def background_thread():
     with Connector() as c:
         while True:
-            c.connect_to_cluster()
+            print("here")
+            c.connect()
+            print("here")
 
             socketio.sleep(1)
 

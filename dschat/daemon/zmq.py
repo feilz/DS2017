@@ -1,5 +1,6 @@
 import zmq
 
+
 class ZMQ:
     def __init__(self,ip,port):
         self.context=zmq.Context()
