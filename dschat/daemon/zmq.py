@@ -1,4 +1,4 @@
-import pyzmq
+import zmq
 
 class ZMQ:
     def __init__(self,ip,port):
