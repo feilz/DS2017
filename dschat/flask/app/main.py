@@ -24,15 +24,19 @@ thread = None
 
 def background_thread():
     with Connector() as c:
+        c.connect()
+
         while True:
             print("here")
-            c.connect()
             print("here")
 
             socketio.sleep(1)
 
             message = next(c.next_message())
 
+            print("CCCCCCCCCC")
+            print(message)
+            print("CCCCCCCCCC")
             if message:
                 with app.test_request_context('/'):
                     with app.app_context():
