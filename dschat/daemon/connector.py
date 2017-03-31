@@ -133,7 +133,8 @@ class Connector():
             print(nodes)
             counter = 0
 
-            return nodes
+            if nodes:
+                return nodes
 
 #####
 #            oldest_node = None
