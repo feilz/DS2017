@@ -15,28 +15,27 @@ from dschat.db.database import Database
 db = Database()
 
 app = Flask(__name__)
-app.debug = True
 app.config["SECRET_KEY"] = "CHANGEME"
 app.register_blueprint(main)
 socketio = SocketIO(app)
 thread = None
 
+c = Connector()
+c.connect()
+
 
 def background_thread():
-    with Connector() as c:
-        c.connect()
+    while True:
+        socketio.sleep(1)
 
-        while True:
-            socketio.sleep(1)
+        message = next(c.next_message())
 
-            message = next(c.next_message())
-
-            print(message)
-            if message:
-                with app.test_request_context('/'):
-                    with app.app_context():
-                        socketio.emit("message", {"msg": message["data"]}, room="asd", namespace="/chat")
-                        #socketio.emit("message", message["content"], room=message["room"], namespace="/chat")
+        print(message)
+        if message:
+            with app.test_request_context('/'):
+                with app.app_context():
+                    socketio.emit("message", {"msg": message["data"]}, room="asd", namespace="/chat")
+                    #socketio.emit("message", message["content"], room=message["room"], namespace="/chat")
 
 
 @socketio.on('joined', namespace='/chat')
