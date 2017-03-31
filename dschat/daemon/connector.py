@@ -1,5 +1,6 @@
 
 import sys
+import zmq
 import time
 import socket
 import argparse
@@ -10,7 +11,7 @@ from dschat.daemon.zmq_connector import ZMQ
 
 class Connector():
     def __init__(self):
-        self.starttime=time.time()
+        self.starttime=int(time.time())
         self.running = True
         
         self.broadcast_buffer = 1024
@@ -38,27 +39,27 @@ class Connector():
             datetime = ts_to_datetime(tstamp)
             unix_time = ts_to_unix(tstamp)
             message = {}
-            print("BBBBB")
-            try:
-                #zmqmsg=self.zmq.sub.recv(flags=zmq.NOBLOCK)
-                #message['datetime']=zmqmsg['datetime']
 
-                message["content"] = {"msg": "This is a test message"}
-                print("AAAAA")
-                message["room"] = "asd"
+            self.zmq.publish("MESSAGE FROM %s" % self.ip)
+
+            try:
+                zmqmsg = self.zmq.sub.recv(flags=zmq.NOBLOCK)
+                print(zmqmsg)
+                message["data"] = zmqmsg
             except zmq.Again as e:
                 pass
            
             yield message
 
-    def connect(self, master=None):
-        if not master:
-            master = self.broadcast()
+    def connect(self, nodes=None):
+        if not nodes:
+            nodes = self.broadcast()
 
         self.zmq = ZMQ(self.ip, self.zmq_pub_port)
 
-        if master != self.ip:
-            self.zmq.connectsub(master)
+        for node in nodes:
+            print("ZMQ connecting to %s" % node[0][0])
+            self.zmq.connectsub((node[0][0], self.zmq_pub_port))
 
     def _exit(self, exit_code):
         self.running = False
@@ -93,13 +94,12 @@ class Connector():
         counter = 0
         max_tries = 3
 
-        master = None
         nodes = []
 
         while self.running:
             while counter < max_tries:
                 try:
-                    ls.sendto(magic + "|" + discovery+"|"+"%d" %self.uptime(), ("10.1.64.255", self.broadcast_port))
+                    ls.sendto(magic + "|" + discovery+"|"+"%d" %self.starttime, ("10.1.64.255", self.broadcast_port))
                 except socket.error as e:
                     print(e)
                     self._exit(1)
@@ -120,7 +120,7 @@ class Connector():
                             print(message)
                             if addr[0] != self.ip:
                                 if (addr, message[3]) not in nodes:
-                                    nodes.append((addr, message[3]))
+                                    nodes.append((addr, int(message[3])))
                                 #zmqhandlers.connectsub(addr)
                                 #print("FOUND NEW NODE AT %s" % message[2])
                                 #ls.sendto("HELLO THERE", addr)
@@ -133,18 +133,33 @@ class Connector():
             print(nodes)
             counter = 0
 
-            if nodes:
-                return nodes[0][0]
+            return nodes
+
+#####
+#            oldest_node = None
+
+            #for node in nodes:
+            #    if not oldest_node:
+            #        oldest_node = node
+            #        continue
+#
+#                if node[1] < oldest_node[1]:
+#                    oldest_node = node
+#
+#            if oldest_node[1] < self.starttime:
+#                # I am node
+#                return oldest_node[0][0]
+#
+#            else:
+#                # I am master
+#                return self.ip
+#####
+
+            #if nodes:
+            #    return nodes[0][0]
 
             #result = select.select([s], [], [])
             #print(result)
             # If response
             # Set up ZMQ
             # Fall back here means that if ZMQ disconnects, it will loop
-
-
-    def uptime(self):
-        if not hasattr(self, "time_now"):
-            self.time_now = time.time()
-
-        return self.time_now - self.starttime

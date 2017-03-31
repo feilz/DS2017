@@ -27,20 +27,16 @@ def background_thread():
         c.connect()
 
         while True:
-            print("here")
-            print("here")
-
             socketio.sleep(1)
 
             message = next(c.next_message())
 
-            print("CCCCCCCCCC")
             print(message)
-            print("CCCCCCCCCC")
             if message:
                 with app.test_request_context('/'):
                     with app.app_context():
-                        socketio.emit("message", message["content"], room=message["room"], namespace="/chat")
+                        socketio.emit("message", {"msg": message["data"]}, room="asd", namespace="/chat")
+                        #socketio.emit("message", message["content"], room=message["room"], namespace="/chat")
 
 
 @socketio.on('joined', namespace='/chat')
