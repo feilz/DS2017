@@ -35,6 +35,8 @@ class Connector():
     def next_message(self):
         while True:
             #zmqmsg=None
+            
+            #Timestamp should be taken from the ZMQ message? marhaata
             tstamp = create_timestamp()
             datetime = ts_to_datetime(tstamp)
             unix_time = ts_to_unix(tstamp)

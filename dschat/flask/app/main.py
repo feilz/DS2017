@@ -2,6 +2,7 @@
 from gevent import monkey
 monkey.patch_all()
 
+import json
 from threading import Thread
 from flask import Flask, render_template, session, request, g
 from flask_socketio import emit, join_room, leave_room, SocketIO, disconnect
@@ -49,6 +50,18 @@ def joined(message):
     datetime = ts_to_datetime(tstamp)
     unix_time = ts_to_unix(tstamp)
     message = ' has entered the room.'
+
+    # TODO
+    # Check ZMQ buffer for newer messages
+    # that have not been emitted
+    zmq_buffer = next(c.next_message())
+    zmq_timestamp = zmq_buffer["tstamp"]
+    
+    if zmg_buffer:
+        if zmq_timestamp < unix_time:
+            emit("message", {"msg": message["data"]}, room=message["room"], namespace="/chat")
+        
+    
     
     # TODO
     # Check if user exists
@@ -58,7 +71,15 @@ def joined(message):
     
     # TODO
     # Synchronise messages here
+    json_string = {
+        'username': username,
+        'timestamp': unix_time,
+        'message': message,
+        'room': room,
+    }
+    c.publish(json.dumps(json_string))
 
+    #Insert data to local database
     db.insert_message(user=username, ts=unix_time, message=message, room=room)
     
     emit('status', {'msg': datetime + ": " + username + message}, room=room)
@@ -76,8 +97,25 @@ def text(message):
     message = message['msg']
     
     # TODO
+    # Check ZMQ buffer for newer messages
+    # that have not been emitted
+    zmq_buffer = next(c.next_message())
+    zmq_timestamp = zmq_buffer["tstamp"]
+    
+    if zmg_buffer:
+        if zmq_timestamp < unix_time:
+            emit("message", {"msg": message["data"]}, room=message["room"], namespace="/chat")    
+    # TODO
     # Synchronise messages here
+    json_string = {
+        'username': username,
+        'timestamp': unix_time,
+        'message': message,
+        'room': room,
+    }
+    c.publish(json.dumps(json_string))
 
+    #Insert data to local database
     db.insert_message(user=username, ts=unix_time, message=message, room=room)
     
     emit('message', {'msg': datetime + ": " + username + ':' + message}, room=room)
@@ -96,8 +134,25 @@ def left(message):
     leave_room(room)
     
     # TODO
+    # Check ZMQ buffer for newer messages
+    # that have not been emitted
+    zmq_buffer = next(c.next_message())
+    zmq_timestamp = zmq_buffer["tstamp"]
+    
+    if zmg_buffer:
+        if zmq_timestamp < unix_time:
+            emit("message", {"msg": message["data"]}, room=message["room"], namespace="/chat")    
+    # TODO
     # Synchronise messages here
-
+    json_string = {
+        'username': username,
+        'timestamp': unix_time,
+        'message': message,
+        'room': room,
+    }
+    c.publish(json.dumps(json_string))
+    
+    #Insert data to local database
     db.insert_message(user=username, ts=unix_time, message=message, room=room)
 
     emit('status', {'msg': datetime + ": " + username + message}, room=room)
