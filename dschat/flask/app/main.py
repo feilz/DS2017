@@ -46,9 +46,8 @@ def joined(message):
     room = session.get('room')
     join_room(room)
     username = session.get('name')
-    tstamp = create_timestamp()
-    datetime = ts_to_datetime(tstamp)
-    unix_time = ts_to_unix(tstamp)
+    unix_time = create_timestamp()
+    datetime = ts_to_date(unix_time)
     message = ' has entered the room.'
 
     # TODO
@@ -91,9 +90,8 @@ def text(message):
     The message is sent to all people in the room."""
     room = session.get('room')
     username = session.get('name')
-    tstamp = create_timestamp()
-    datetime = ts_to_datetime(tstamp)
-    unix_time = ts_to_unix(tstamp)
+    unix_time = create_timestamp()
+    datetime = ts_to_date(unix_time)
     message = message['msg']
     
     # TODO
@@ -127,9 +125,8 @@ def left(message):
     A status message is broadcast to all people in the room."""
     room = session.get('room')
     username = session.get('name')
-    tstamp = create_timestamp()
-    datetime = ts_to_datetime(tstamp)
-    unix_time = ts_to_unix(tstamp)
+    unix_time = create_timestamp()
+    datetime = ts_to_date(unix_time)
     message = ' has left the room.'
     leave_room(room)
     
