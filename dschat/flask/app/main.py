@@ -49,7 +49,7 @@ def joined(message):
     username = session.get('name')
     unix_time = create_timestamp()
     datetime = ts_to_date(unix_time)
-    message = ' has entered the room.'
+    status_message = ' has entered the room.'
 
     # TODO
     # Check ZMQ buffer for newer messages
@@ -76,15 +76,15 @@ def joined(message):
     json_string = {
         'username': username,
         'timestamp': unix_time,
-        'message': message,
+        'message': status_message,
         'room': room,
     }
     c.zmq.publish(json.dumps(json_string))
 
     #Insert data to local database
-    db.insert_message(user=username, ts=unix_time, message=message, room=room)
+    db.insert_message(user=username, ts=unix_time, message=status_message, room=room)
     
-    emit('status', {'msg': datetime + ": " + username + message}, room=room)
+    emit('status', {'msg': datetime + ": " + username + status_message}, room=room)
 
 
 @socketio.on('text', namespace='/chat')
@@ -95,7 +95,7 @@ def text(message):
     username = session.get('name')
     unix_time = create_timestamp()
     datetime = ts_to_date(unix_time)
-    message = message['msg']
+    status_message = message['msg']
     
     # TODO
     # Check ZMQ buffer for newer messages
@@ -114,15 +114,15 @@ def text(message):
     json_string = {
         'username': username,
         'timestamp': unix_time,
-        'message': message,
+        'message': status_message,
         'room': room,
     }
     c.zmq.publish(json.dumps(json_string))
 
     #Insert data to local database
-    db.insert_message(user=username, ts=unix_time, message=message, room=room)
+    db.insert_message(user=username, ts=unix_time, message=status_message, room=room)
     
-    emit('message', {'msg': datetime + ": " + username + ':' + message}, room=room)
+    emit('message', {'msg': datetime + ": " + username + ':' + status_message}, room=room)
 
 
 @socketio.on('left', namespace='/chat')
@@ -133,7 +133,7 @@ def left(message):
     username = session.get('name')
     unix_time = create_timestamp()
     datetime = ts_to_date(unix_time)
-    message = ' has left the room.'
+    status_message = ' has left the room.'
     leave_room(room)
     
     # TODO
@@ -153,15 +153,15 @@ def left(message):
     json_string = {
         'username': username,
         'timestamp': unix_time,
-        'message': message,
+        'message': status_message,
         'room': room,
     }
     c.zmq.publish(json.dumps(json_string))
     
     #Insert data to local database
-    db.insert_message(user=username, ts=unix_time, message=message, room=room)
+    db.insert_message(user=username, ts=unix_time, message=status_message, room=room)
 
-    emit('status', {'msg': datetime + ": " + username + message}, room=room)
+    emit('status', {'msg': datetime + ": " + username + status_message}, room=room)
 
 
 @socketio.on('connect', namespace='/chat')
