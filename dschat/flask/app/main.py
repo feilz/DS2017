@@ -29,15 +29,15 @@ def background_thread():
     while True:
         socketio.sleep(1)
 
-        message = next(c.next_message())
-
-        if message:
-            message = json.loads(message)
-
-            with app.app_context():
-                new_message = "%s: %s: %s" % (ts_to_date(message["timestamp"]), message["username"], message["message"])
-                socketio.emit("message", {"msg": new_message}, room=message["room"], namespace="/chat")
-                #socketio.emit("message", message["content"], room=message["room"], namespace="/chat")
+        while True:
+            message = next(c.next_message())
+            if message:
+                message = json.loads(message)
+                with app.app_context():
+                    new_message = "%s: %s: %s" % (ts_to_date(message["timestamp"]), message["username"], message["message"])
+                    socketio.emit("message", {"msg": new_message}, room=message["room"], namespace="/chat")
+            else:
+                break
 
 
 @socketio.on('joined', namespace='/chat')
@@ -57,12 +57,12 @@ def joined(message):
     
     while True:
         message = next(c.next_message())
-            if message and message["timestamp"] < unix_time:
-                message = json.loads(message)
-                new_message = "%s: %s: %s" % (ts_to_date(message["timestamp"]), message["username"], message["message"])
-                emit("message", {"msg": new_message}, room=message["room"])
-            else:
-                break
+        if message and message["timestamp"] < unix_time:
+            message = json.loads(message)
+            new_message = "%s: %s: %s" % (ts_to_date(message["timestamp"]), message["username"], message["message"])
+            emit("message", {"msg": new_message}, room=message["room"])
+        else:
+            break
     
     
     # TODO
@@ -102,12 +102,12 @@ def text(message):
     # that have not been emitted
     while True:
         message = next(c.next_message())
-            if message and message["timestamp"] < unix_time:
-                message = json.loads(message)
-                new_message = "%s: %s: %s" % (ts_to_date(message["timestamp"]), message["username"], message["message"])
-                emit("message", {"msg": new_message}, room=message["room"])
-            else:
-                break
+        if message and message["timestamp"] < unix_time:
+            message = json.loads(message)
+            new_message = "%s: %s: %s" % (ts_to_date(message["timestamp"]), message["username"], message["message"])
+            emit("message", {"msg": new_message}, room=message["room"])
+        else:
+            break
                 
     # TODO
     # Synchronise messages here
@@ -141,12 +141,12 @@ def left(message):
     # that have not been emitted
     while True:
         message = next(c.next_message())
-            if message and message["timestamp"] < unix_time:
-                message = json.loads(message)
-                new_message = "%s: %s: %s" % (ts_to_date(message["timestamp"]), message["username"], message["message"])
-                emit("message", {"msg": new_message}, room=message["room"])
-            else:
-                break
+        if message and message["timestamp"] < unix_time:
+            message = json.loads(message)
+            new_message = "%s: %s: %s" % (ts_to_date(message["timestamp"]), message["username"], message["message"])
+            emit("message", {"msg": new_message}, room=message["room"])
+        else:
+            break
                 
     # TODO
     # Synchronise messages here
