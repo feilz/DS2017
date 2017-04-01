@@ -29,15 +29,15 @@ def background_thread():
     while True:
         socketio.sleep(1)
 
-        message = next(c.next_message())
-
-        if message:
-            message = json.loads(message)
-
-            with app.app_context():
-                new_message = "%s: %s: %s" % (ts_to_date(message["timestamp"]), message["username"], message["message"])
-                socketio.emit("message", {"msg": new_message}, room=message["room"], namespace="/chat")
-                #socketio.emit("message", message["content"], room=message["room"], namespace="/chat")
+        while True:
+            message = next(c.next_message())
+            if message:
+                message = json.loads(message)
+                with app.app_context():
+                    new_message = "%s: %s: %s" % (ts_to_date(message["timestamp"]), message["username"], message["message"])
+                    socketio.emit("message", {"msg": new_message}, room=message["room"], namespace="/chat")
+            else:
+                break
 
 
 @socketio.on('joined', namespace='/chat')
@@ -49,18 +49,20 @@ def joined(message):
     username = session.get('name')
     unix_time = create_timestamp()
     datetime = ts_to_date(unix_time)
-    message = ' has entered the room.'
+    status_message = ' has entered the room.'
 
     # TODO
     # Check ZMQ buffer for newer messages
     # that have not been emitted
-    #zmq_buffer = next(c.next_message())
-    #zmq_timestamp = zmq_buffer["timestamp"]
     
-    #if zmg_buffer:
-    #    if zmq_timestamp < unix_time:
-    #emit("message", {"msg": message["data"]}, room=message["room"], namespace="/chat")
-        
+    while True:
+        message = next(c.next_message())
+        if message and message["timestamp"] < unix_time:
+            message = json.loads(message)
+            new_message = "%s: %s: %s" % (ts_to_date(message["timestamp"]), message["username"], message["message"])
+            emit("message", {"msg": new_message}, room=message["room"])
+        else:
+            break
     
     
     # TODO
@@ -74,15 +76,15 @@ def joined(message):
     json_string = {
         'username': username,
         'timestamp': unix_time,
-        'message': message,
+        'message': status_message,
         'room': room,
     }
     c.zmq.publish(json.dumps(json_string))
 
     #Insert data to local database
-    db.insert_message(user=username, ts=unix_time, message=message, room=room)
+    db.insert_message(user=username, ts=unix_time, message=status_message, room=room)
     
-    emit('status', {'msg': datetime + ": " + username + message}, room=room)
+    emit('status', {'msg': datetime + ": " + username + status_message}, room=room)
 
 
 @socketio.on('text', namespace='/chat')
@@ -93,31 +95,34 @@ def text(message):
     username = session.get('name')
     unix_time = create_timestamp()
     datetime = ts_to_date(unix_time)
-    message = message['msg']
+    status_message = message['msg']
     
     # TODO
     # Check ZMQ buffer for newer messages
     # that have not been emitted
-    #zmq_buffer = next(c.next_message())
-    #zmq_timestamp = zmq_buffer["timestamp"]
-    
-    #if zmg_buffer:
-    #    if zmq_timestamp < unix_time:
-    #        emit("message", {"msg": message["data"]}, room=message["room"], namespace="/chat")    
+    while True:
+        message = next(c.next_message())
+        if message and message["timestamp"] < unix_time:
+            message = json.loads(message)
+            new_message = "%s: %s: %s" % (ts_to_date(message["timestamp"]), message["username"], message["message"])
+            emit("message", {"msg": new_message}, room=message["room"])
+        else:
+            break
+                
     # TODO
     # Synchronise messages here
     json_string = {
         'username': username,
         'timestamp': unix_time,
-        'message': message,
+        'message': status_message,
         'room': room,
     }
     c.zmq.publish(json.dumps(json_string))
 
     #Insert data to local database
-    db.insert_message(user=username, ts=unix_time, message=message, room=room)
+    db.insert_message(user=username, ts=unix_time, message=status_message, room=room)
     
-    emit('message', {'msg': datetime + ": " + username + ':' + message}, room=room)
+    emit('message', {'msg': datetime + ": " + username + ':' + status_message}, room=room)
 
 
 @socketio.on('left', namespace='/chat')
@@ -129,12 +134,13 @@ def left(message):
     session["left"] = True
     unix_time = create_timestamp()
     datetime = ts_to_date(unix_time)
-    message = ' has left the room.'
+    status_message = ' has left the room.'
     leave_room(room)
     
     # TODO
     # Check ZMQ buffer for newer messages
     # that have not been emitted
+
     zmq_buffer = next(c.next_message())
     
     if zmq_buffer:
@@ -142,20 +148,30 @@ def left(message):
 
         if zmq_timestamp < unix_time:
             emit("message", {"msg": message["data"]}, room=message["room"], namespace="/chat")    
+
+    while True:
+        message = next(c.next_message())
+        if message and message["timestamp"] < unix_time:
+            message = json.loads(message)
+            new_message = "%s: %s: %s" % (ts_to_date(message["timestamp"]), message["username"], message["message"])
+            emit("message", {"msg": new_message}, room=message["room"])
+        else:
+            break
+
     # TODO
     # Synchronise messages here
     json_string = {
         'username': username,
         'timestamp': unix_time,
-        'message': message,
+        'message': status_message,
         'room': room,
     }
     c.zmq.publish(json.dumps(json_string))
     
     #Insert data to local database
-    db.insert_message(user=username, ts=unix_time, message=message, room=room)
+    db.insert_message(user=username, ts=unix_time, message=status_message, room=room)
 
-    emit('status', {'msg': datetime + ": " + username + message}, room=room)
+    emit('status', {'msg': datetime + ": " + username + status_message}, room=room)
 
 @socketio.on('disconnect', namespace='/chat')
 def disconnected():
