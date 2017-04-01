@@ -54,13 +54,15 @@ def joined(message):
     # TODO
     # Check ZMQ buffer for newer messages
     # that have not been emitted
-    #zmq_buffer = next(c.next_message())
-    #zmq_timestamp = zmq_buffer["timestamp"]
     
-    #if zmg_buffer:
-    #    if zmq_timestamp < unix_time:
-    #emit("message", {"msg": message["data"]}, room=message["room"], namespace="/chat")
-        
+    while True:
+        message = next(c.next_message())
+            if message and message["timestamp"] < unix_time:
+                message = json.loads(message)
+                new_message = "%s: %s: %s" % (ts_to_date(message["timestamp"]), message["username"], message["message"])
+                emit("message", {"msg": new_message}, room=message["room"])
+            else:
+                break
     
     
     # TODO
@@ -98,12 +100,15 @@ def text(message):
     # TODO
     # Check ZMQ buffer for newer messages
     # that have not been emitted
-    #zmq_buffer = next(c.next_message())
-    #zmq_timestamp = zmq_buffer["timestamp"]
-    
-    #if zmg_buffer:
-    #    if zmq_timestamp < unix_time:
-    #        emit("message", {"msg": message["data"]}, room=message["room"], namespace="/chat")    
+    while True:
+        message = next(c.next_message())
+            if message and message["timestamp"] < unix_time:
+                message = json.loads(message)
+                new_message = "%s: %s: %s" % (ts_to_date(message["timestamp"]), message["username"], message["message"])
+                emit("message", {"msg": new_message}, room=message["room"])
+            else:
+                break
+                
     # TODO
     # Synchronise messages here
     json_string = {
@@ -134,13 +139,15 @@ def left(message):
     # TODO
     # Check ZMQ buffer for newer messages
     # that have not been emitted
-    zmq_buffer = next(c.next_message())
-    
-    if zmg_buffer:
-        zmq_timestamp = zmq_buffer["timestamp"]
-
-        if zmq_timestamp < unix_time:
-            emit("message", {"msg": message["data"]}, room=message["room"], namespace="/chat")    
+    while True:
+        message = next(c.next_message())
+            if message and message["timestamp"] < unix_time:
+                message = json.loads(message)
+                new_message = "%s: %s: %s" % (ts_to_date(message["timestamp"]), message["username"], message["message"])
+                emit("message", {"msg": new_message}, room=message["room"])
+            else:
+                break
+                
     # TODO
     # Synchronise messages here
     json_string = {
