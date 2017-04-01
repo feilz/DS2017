@@ -11,7 +11,7 @@ from dschat.daemon.zmq_connector import ZMQ
 
 class Connector():
     def __init__(self):
-        self.starttime=int(time.time())
+        self.starttime=create_timestamp()
         self.running = True
         
         self.broadcast_buffer = 1024
@@ -50,11 +50,11 @@ class Connector():
         self.zmq = ZMQ(self.ip, self.zmq_pub_port)
 
         for node in self.nodes:
-            print("ZMQ connecting to %s" % node[0][0])
-            self.zmq.connectsub((node[0][0], self.zmq_pub_port))
+            print("ZMQ connecting to %s" % node[0])
+            self.zmq.connectsub((node[0], self.zmq_pub_port))
 
-        bgListener=Thread(target=self.backgroundListener,args=(bs,ls,))
-        bgListener.start()
+        #bgListener=Thread(target=self.backgroundListener,args=(bs,ls,))
+        #bgListener.start()
 
     def _exit(self, exit_code):
         self.running = False

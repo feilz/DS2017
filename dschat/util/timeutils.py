@@ -1,10 +1,10 @@
 
-from time import time, localtime, strftime
+import time
 
 
 def create_timestamp():
-    return int(time())
+    return int(time.time())
 
 
 def ts_to_date(timestamp):
-    return strftime("%Y-%m-%d %H:%M:%S", localtime(timestamp))
+    return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(timestamp))

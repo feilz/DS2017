@@ -31,11 +31,11 @@ def background_thread():
 
         message = next(c.next_message())
 
-        print(message)
         if message:
+            message = json.loads(message)
+
             with app.app_context():
-                new_message = "%s: %s: %s" % (ts_to_datetime(message["timestamp"]), message["username"], message["message"])
-                print(new_message)
+                new_message = "%s: %s: %s" % (ts_to_date(message["timestamp"]), message["username"], message["message"])
                 socketio.emit("message", {"msg": new_message}, room=message["room"], namespace="/chat")
                 #socketio.emit("message", message["content"], room=message["room"], namespace="/chat")
 
