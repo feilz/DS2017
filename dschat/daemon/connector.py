@@ -1,9 +1,9 @@
-
 import sys
 import zmq
 import time
 import socket
 import argparse
+from threading import Thread
 
 from dschat.util.timeutils import *
 from dschat.daemon.zmq_connector import ZMQ
@@ -55,11 +55,14 @@ class Connector():
 
     def connect(self, nodes=None):
         if not nodes:
-            nodes = self.broadcast()
+            bs, self.nodes = self.broadcast()
+
+        bgListener=Thread(target=self.backgroundListener,args=(bs,))
+        bgListener.start()
 
         self.zmq = ZMQ(self.ip, self.zmq_pub_port)
 
-        for node in nodes:
+        for node in self.nodes:
             print("ZMQ connecting to %s" % node[0][0])
             self.zmq.connectsub((node[0][0], self.zmq_pub_port))
 
@@ -136,7 +139,34 @@ class Connector():
             counter = 0
 
             if nodes:
-                return nodes
+                return bs,nodes
+
+    def backgroundListener(self,bs,ls):
+        magic="DEADBEEF"
+        discovery="whoismaster|%s" %self.ip
+        while self.running:
+            try:
+                data,addr=bs.recvfrom(self.broadcast_buffer)
+                if (data,addr):
+                    print(data)
+                    print(addr)
+                if data:
+                    msg = data.split("|")
+                    if msg[0]==magic and message[1]=="whoismaster":
+                        print(msg)
+                        if addr[0]!=self.ip:
+                            if (addr,msg[3]) not in self.nodes:
+                                print("ZMQ connecting to %s" %addr)
+                                self.zmq.connectsub(addr,self.zmq_pub_port)
+                                self.nodes.append(addr,msg[3])
+                                ls.sendto(magic+"|"+discovery+"|"+"%s"%self.starttime,(addr))
+            except socket.error as e:
+                time.sleep(1)
+                pass
+        ls.shutdown()
+        ls.close()
+        bs.shutdown()
+        bs.close()
 
 #####
 #            oldest_node = None
