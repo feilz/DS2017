@@ -45,16 +45,16 @@ class Connector():
 
     def connect(self, nodes=None):
         if not nodes:
-            bs, self.nodes = self.broadcast()
-
-        bgListener=Thread(target=self.backgroundListener,args=(bs,))
-        bgListener.start()
+            ls, bs, self.nodes = self.broadcast()
 
         self.zmq = ZMQ(self.ip, self.zmq_pub_port)
 
         for node in self.nodes:
             print("ZMQ connecting to %s" % node[0][0])
             self.zmq.connectsub((node[0][0], self.zmq_pub_port))
+
+        bgListener=Thread(target=self.backgroundListener,args=(bs,ls,))
+        bgListener.start()
 
     def _exit(self, exit_code):
         self.running = False
@@ -114,8 +114,8 @@ class Connector():
                         if message[0] == magic and message[1] == "whoismaster":
                             print(message)
                             if addr[0] != self.ip:
-                                if (addr, message[3]) not in nodes:
-                                    nodes.append((addr, int(message[3])))
+                                if addr not in nodes:
+                                    nodes.append(addr)
                                 #zmqhandlers.connectsub(addr)
                                 #print("FOUND NEW NODE AT %s" % message[2])
                                 #ls.sendto("HELLO THERE", addr)
@@ -129,7 +129,7 @@ class Connector():
             counter = 0
 
             if nodes:
-                return bs,nodes
+                return ls,bs,nodes
 
     def backgroundListener(self,bs,ls):
         magic="DEADBEEF"
@@ -142,13 +142,19 @@ class Connector():
                     print(addr)
                 if data:
                     msg = data.split("|")
-                    if msg[0]==magic and message[1]=="whoismaster":
+                    if msg[0]==magic and msg[1]=="whoismaster":
                         print(msg)
                         if addr[0]!=self.ip:
-                            if (addr,msg[3]) not in self.nodes:
-                                print("ZMQ connecting to %s" %addr)
-                                self.zmq.connectsub(addr,self.zmq_pub_port)
-                                self.nodes.append(addr,msg[3])
+                            if addr not in self.nodes:
+                                print("ZMQ connecting to %s" % addr[0])
+                                print("AAAAAAA")
+                                print(addr)
+                                print(addr[0])
+                                print(self.nodes)
+                                print(msg)
+                                print("AAAAAAA")
+                                self.zmq.connectsub(addr[0], self.zmq_pub_port)
+                                self.nodes.append(addr)
                                 ls.sendto(magic+"|"+discovery+"|"+"%s"%self.starttime,(addr))
             except socket.error as e:
                 time.sleep(1)
