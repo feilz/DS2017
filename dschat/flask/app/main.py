@@ -11,6 +11,8 @@ from dschat.flask.app.routes import main
 from dschat.daemon.connector import Connector
 from dschat.util.timeutils import *
 from dschat.db.database import Database
+from dschat.util.crypto import *
+from ast import literal_eval
 
 
 db = Database()
@@ -30,12 +32,16 @@ def background_thread():
         socketio.sleep(1)
 
         while True:
-            message = next(c.next_message())
-            if message:
-                message = json.loads(message)
-                with app.app_context():
-                    new_message = "%s: %s: %s" % (ts_to_date(message["timestamp"]), message["username"], message["message"])
-                    socketio.emit("message", {"msg": new_message}, room=message["room"], namespace="/chat")
+            payload = next(c.next_message())
+            if payload:
+                message = json.loads(decrypt(payload[0], c.secret_key))
+                hash = decrypt(payload[1], c.secret_key)
+                if verify(json.dumps(message), hash):
+                    with app.app_context():
+                        new_message = "%s: %s: %s" % (ts_to_date(message["timestamp"]), message["username"], message["message"])
+                        socketio.emit("message", {"msg": new_message}, room=message["room"], namespace="/chat")
+                else:
+                    break
             else:
                 break
 
@@ -56,11 +62,15 @@ def joined(message):
     # that have not been emitted
     
     while True:
-        message = next(c.next_message())
-        if message and message["timestamp"] < unix_time:
-            message = json.loads(message)
-            new_message = "%s: %s: %s" % (ts_to_date(message["timestamp"]), message["username"], message["message"])
-            emit("message", {"msg": new_message}, room=message["room"])
+        payload = next(c.next_message())
+        if message:
+            message = json.loads(decrypt(payload[0], c.secret_key))
+            hash = decrypt(payload[1], c.secret_key)
+            if verify(json.dumps(message), hash) and message["timestamp"] < unix_time:
+                new_message = "%s: %s: %s" % (ts_to_date(message["timestamp"]), message["username"], message["message"])
+                emit("message", {"msg": new_message}, room=message["room"])
+            else:
+                break
         else:
             break
     
@@ -79,7 +89,9 @@ def joined(message):
         'message': status_message,
         'room': room,
     }
-    c.zmq.publish(json.dumps(json_string))
+    encrypted_json = encrypt(json.dumps(json_string), c.secret_key)
+    encrypted_hash = encrypt(hash(json.dumps(json_string)), c.secret_key)
+    c.zmq.publish((encrypted_json,encrypted_hash))
 
     #Insert data to local database
     db.insert_message(user=username, ts=unix_time, message=status_message, room=room)
@@ -101,11 +113,15 @@ def text(message):
     # Check ZMQ buffer for newer messages
     # that have not been emitted
     while True:
-        message = next(c.next_message())
-        if message and message["timestamp"] < unix_time:
-            message = json.loads(message)
-            new_message = "%s: %s: %s" % (ts_to_date(message["timestamp"]), message["username"], message["message"])
-            emit("message", {"msg": new_message}, room=message["room"])
+        payload = next(c.next_message())
+        if message:
+            message = json.loads(decrypt(payload[0], c.secret_key))
+            hash = decrypt(payload[1], c.secret_key)
+            if verify(json.dumps(message), hash) and message["timestamp"] < unix_time:
+                new_message = "%s: %s: %s" % (ts_to_date(message["timestamp"]), message["username"], message["message"])
+                emit("message", {"msg": new_message}, room=message["room"])
+            else:
+                break
         else:
             break
                 
@@ -117,7 +133,9 @@ def text(message):
         'message': status_message,
         'room': room,
     }
-    c.zmq.publish(json.dumps(json_string))
+    encrypted_json = encrypt(json.dumps(json_string), c.secret_key)
+    encrypted_hash = encrypt(hash(json.dumps(json_string)), c.secret_key)
+    c.zmq.publish((encrypted_json,encrypted_hash))
 
     #Insert data to local database
     db.insert_message(user=username, ts=unix_time, message=status_message, room=room)
@@ -150,11 +168,15 @@ def left(message):
             emit("message", {"msg": message["data"]}, room=message["room"], namespace="/chat")    
 
     while True:
-        message = next(c.next_message())
-        if message and message["timestamp"] < unix_time:
-            message = json.loads(message)
-            new_message = "%s: %s: %s" % (ts_to_date(message["timestamp"]), message["username"], message["message"])
-            emit("message", {"msg": new_message}, room=message["room"])
+        payload = next(c.next_message())
+        if message:
+            message = json.loads(decrypt(payload[0], c.secret_key))
+            hash = decrypt(payload[1], c.secret_key)
+            if verify(json.dumps(message), hash) and message["timestamp"] < unix_time:
+                new_message = "%s: %s: %s" % (ts_to_date(message["timestamp"]), message["username"], message["message"])
+                emit("message", {"msg": new_message}, room=message["room"])
+            else:
+                break
         else:
             break
 
@@ -166,7 +188,9 @@ def left(message):
         'message': status_message,
         'room': room,
     }
-    c.zmq.publish(json.dumps(json_string))
+    encrypted_json = encrypt(json.dumps(json_string), c.secret_key)
+    encrypted_hash = encrypt(hash(json.dumps(json_string)), c.secret_key)
+    c.zmq.publish((encrypted_json,encrypted_hash))
     
     #Insert data to local database
     db.insert_message(user=username, ts=unix_time, message=status_message, room=room)

@@ -24,6 +24,8 @@ class Connector():
         self._parse_args()
         self.ip = self.args["ip"]
         self.secret = self.args["secret"]
+        if self.secret:
+            self.secret_key = build_secret_key(self.secret)
 
         self.zmq = ZMQ(self.ip, self.zmq_pub_port)
 
