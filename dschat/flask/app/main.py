@@ -126,6 +126,7 @@ def left(message):
     A status message is broadcast to all people in the room."""
     room = session.get('room')
     username = session.get('name')
+    session["left"] = True
     unix_time = create_timestamp()
     datetime = ts_to_date(unix_time)
     message = ' has left the room.'
@@ -136,7 +137,7 @@ def left(message):
     # that have not been emitted
     zmq_buffer = next(c.next_message())
     
-    if zmg_buffer:
+    if zmq_buffer:
         zmq_timestamp = zmq_buffer["timestamp"]
 
         if zmq_timestamp < unix_time:
@@ -156,6 +157,40 @@ def left(message):
 
     emit('status', {'msg': datetime + ": " + username + message}, room=room)
 
+@socketio.on('disconnect', namespace='/chat')
+def disconnected():
+    """Called when client is disconnected by accident or by browser closing."""
+    if session.get('left') is None:
+        room = session.get('room')
+        username = session.get('name')
+        unix_time = create_timestamp()
+        datetime = ts_to_date(unix_time)
+        message = ' has disconnected.'
+        leave_room(room)
+        # TODO
+        # Check ZMQ buffer for newer messages
+        # that have not been emitted
+        zmq_buffer = next(c.next_message())
+        
+        if zmq_buffer:
+            zmq_timestamp = zmq_buffer["timestamp"]
+
+            if zmq_timestamp < unix_time:
+                emit("message", {"msg": message["data"]}, room=message["room"], namespace="/chat")    
+        # TODO
+        # Synchronise messages here
+        json_string = {
+            'username': username,
+            'timestamp': unix_time,
+            'message': message,
+            'room': room,
+        }
+        c.zmq.publish(json.dumps(json_string))
+        
+        #Insert data to local database
+        db.insert_message(user=username, ts=unix_time, message=message, room=room)
+
+        emit('status', {'msg': datetime + ": " + username + message}, room=room)
 
 @socketio.on('connect', namespace='/chat')
 def test_connect():
