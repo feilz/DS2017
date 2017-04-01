@@ -1,15 +1,10 @@
 
-import time
-import datetime
+from time import time, localtime, strftime
 
 
 def create_timestamp():
-    return datetime.datetime.now()
+    return int(time())
 
 
-def ts_to_datetime(timestamp):
-    return "{:%Y-%m-%d %H:%M:%S}".format(timestamp)
-
-
-def ts_to_unix(timestamp):
-    return int(time.mktime(timestamp.timetuple()))
+def ts_to_date(timestamp):
+    return strftime("%Y-%m-%d %H:%M:%S", localtime(timestamp))
