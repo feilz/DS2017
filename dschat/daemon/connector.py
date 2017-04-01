@@ -3,7 +3,7 @@ import zmq
 import time
 import socket
 import argparse
-from threading import Thread
+import multiprocessing
 
 from dschat.util.timeutils import *
 from dschat.daemon.zmq_connector import ZMQ
@@ -24,6 +24,8 @@ class Connector():
         self._parse_args()
         self.ip = self.args["ip"]
         self.secret = self.args["secret"]
+
+        self.zmq = ZMQ(self.ip, self.zmq_pub_port)
 
     def __enter__(self):
         #self.broadcast()
@@ -47,14 +49,12 @@ class Connector():
         if not nodes:
             ls, bs, self.nodes = self.broadcast()
 
-        self.zmq = ZMQ(self.ip, self.zmq_pub_port)
-
         for node in self.nodes:
             print("ZMQ connecting to %s" % node[0])
             self.zmq.connectsub((node[0], self.zmq_pub_port))
 
-        #bgListener=Thread(target=self.backgroundListener,args=(bs,ls,))
-        #bgListener.start()
+        bgListener=multiprocessing.Process(target=self.backgroundListener,args=(bs,ls,))
+        bgListener.start()
 
     def _exit(self, exit_code):
         self.running = False
@@ -135,6 +135,7 @@ class Connector():
         magic="DEADBEEF"
         discovery="whoismaster|%s" %self.ip
         while self.running:
+            print("HERE")
             try:
                 data,addr=bs.recvfrom(self.broadcast_buffer)
                 if (data,addr):
@@ -153,9 +154,9 @@ class Connector():
                                 print(self.nodes)
                                 print(msg)
                                 print("AAAAAAA")
-                                self.zmq.connectsub(addr[0], self.zmq_pub_port)
+                                ls.sendto(magic + "|" + discovery+"|"+"%d" %self.starttime, ("10.1.64.255", self.broadcast_port))
+                                self.zmq.connectsub((addr[0], self.zmq_pub_port))
                                 self.nodes.append(addr)
-                                ls.sendto(magic+"|"+discovery+"|"+"%s"%self.starttime,(addr))
             except socket.error as e:
                 time.sleep(1)
                 pass
