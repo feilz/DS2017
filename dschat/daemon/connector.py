@@ -21,7 +21,7 @@ class Connector():
         self.zmq_pub_port=5001
 
         self.nodes = []
-        
+        self.lock = multiprocessing.Lock()
         self._parse_args()
         self.ip = self.args["ip"]
         self.secret = self.args["secret"]
@@ -52,12 +52,19 @@ class Connector():
         if not nodes:
             ls, bs, self.nodes = self.broadcast()
 
-        for node in self.nodes:
-            print("ZMQ connecting to %s" % node[0])
-            self.zmq.connectsub((node[0], self.zmq_pub_port))
-
+        nodeConnector=multiprocessing.Process(target=self.connectToNodes)
+        nodeConnector.start()
         bgListener=multiprocessing.Process(target=self.backgroundListener,args=(bs,ls,))
         bgListener.start()
+
+    def connectToNodes(self):
+        while self.running:
+            with self.lock:
+                for node in self.nodes:
+                    print("ZMQ connecting to %s" % node[0])
+                    self.zmq.connectsub((node[0], self.zmq_pub_port))
+            time.sleep(1)
+
 
     def _exit(self, exit_code):
         self.running = False
@@ -118,7 +125,8 @@ class Connector():
                             print(message)
                             if addr[0] != self.ip:
                                 if addr not in nodes:
-                                    nodes.append(addr)
+                                    with self.lock:
+                                        nodes.append(addr)
                                 #zmqhandlers.connectsub(addr)
                                 #print("FOUND NEW NODE AT %s" % message[2])
                                 #ls.sendto("HELLO THERE", addr)
@@ -158,7 +166,6 @@ class Connector():
                                 print(msg)
                                 print("AAAAAAA")
                                 ls.sendto(magic + "|" + discovery+"|"+"%d" %self.starttime, ("10.1.64.255", self.broadcast_port))
-                                self.zmq.connectsub((addr[0], self.zmq_pub_port))
                                 self.nodes.append(addr)
             except socket.error as e:
                 time.sleep(1)
