@@ -22,6 +22,7 @@ class Connector():
 
         self.nodes = []
         self.lock = multiprocessing.Lock()
+        self.connectedNodes=[]
         self._parse_args()
         self.ip = self.args["ip"]
         self.secret = self.args["secret"]
@@ -63,6 +64,7 @@ class Connector():
                 for node in self.nodes:
                     print("ZMQ connecting to %s" % node[0])
                     self.zmq.connectsub((node[0], self.zmq_pub_port))
+                    self.nodes.remove(node)
             time.sleep(1)
 
 
