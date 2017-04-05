@@ -89,7 +89,7 @@ def joined(message):
         'room': room,
     }
     encrypted_json = encrypt(json.dumps(json_string), c.secret)
-    encrypted_digest = encrypt(hash(json.dumps(json_string)), c.secret)
+    encrypted_digest = encrypt(sha1(json.dumps(json_string)), c.secret)
     c.zmq.publish((encrypted_json,encrypted_digest))
 
     #Insert data to local database
@@ -133,7 +133,7 @@ def text(message):
         'room': room,
     }
     encrypted_json = encrypt(json.dumps(json_string), c.secret)
-    encrypted_digest = encrypt(hash(json.dumps(json_string)), c.secret)
+    encrypted_digest = encrypt(sha1(json.dumps(json_string)), c.secret)
     c.zmq.publish((encrypted_json,encrypted_digest))
 
     #Insert data to local database
@@ -188,7 +188,7 @@ def left(message):
         'room': room,
     }
     encrypted_json = encrypt(json.dumps(json_string), c.secret)
-    encrypted_digest = encrypt(hash(json.dumps(json_string)), c.secret)
+    encrypted_digest = encrypt(sha1(json.dumps(json_string)), c.secret)
     c.zmq.publish((encrypted_json,encrypted_digest))
     
     #Insert data to local database

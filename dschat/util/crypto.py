@@ -35,7 +35,7 @@ def decrypt(message, key):
         return f.decrypt(bytes(message))
 
 
-def hash(data):
+def sha1(data):
     digest = hashes.Hash(hashes.SHA1(), backend=default_backend())
     digest.update(data)
 
@@ -43,4 +43,4 @@ def hash(data):
 
 
 def verify(data, data_hash):
-    return hash(data) == data_hash
+    return sha1(data) == data_hash
