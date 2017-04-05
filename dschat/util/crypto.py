@@ -20,15 +20,19 @@ def build_secret_key(secret):
 
 
 def encrypt(message, key):
-    f = Fernet(key)
-
-    return f.encrypt(bytes(message))
+    if key == None:
+        return message
+    else:
+        f = Fernet(key)
+        return f.encrypt(bytes(message))
 
 
 def decrypt(message, key):
-    f = Fernet(key)
-
-    return f.decrypt(bytes(message))
+    if key == None:
+        return message
+    else:
+        f = Fernet(key)
+        return f.decrypt(bytes(message))
 
 
 def hash(data):
