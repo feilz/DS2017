@@ -12,7 +12,6 @@ from dschat.daemon.connector import Connector
 from dschat.util.timeutils import *
 from dschat.db.database import Database
 from dschat.util.crypto import *
-from ast import literal_eval
 
 
 db = Database()
