@@ -33,6 +33,7 @@ def background_thread():
         while True:
             payload = next(c.next_message())
             if payload:
+                payload = payload.split('|')
                 message = json.loads(decrypt(payload[0], c.secret))
                 digest = decrypt(payload[1], c.secret)
                 if verify(json.dumps(message), digest):
@@ -62,7 +63,8 @@ def joined(message):
     
     while True:
         payload = next(c.next_message())
-        if message:
+        if payload:
+            payload = payload.split('|')
             message = json.loads(decrypt(payload[0], c.secret))
             digest = decrypt(payload[1], c.secret)
             if verify(json.dumps(message), digest) and message["timestamp"] < unix_time:
@@ -113,7 +115,8 @@ def text(message):
     # that have not been emitted
     while True:
         payload = next(c.next_message())
-        if message:
+        if payload:
+            payload = payload.split('|')
             message = json.loads(decrypt(payload[0], c.secret))
             digest = decrypt(payload[1], c.secret)
             if verify(json.dumps(message), digest) and message["timestamp"] < unix_time:
@@ -168,7 +171,8 @@ def left(message):
 
     while True:
         payload = next(c.next_message())
-        if message:
+        if payload:
+            payload = payload.split('|')
             message = json.loads(decrypt(payload[0], c.secret))
             digest = decrypt(payload[1], c.secret)
             if verify(json.dumps(message), digest) and message["timestamp"] < unix_time:
@@ -204,32 +208,48 @@ def disconnected():
         username = session.get('name')
         unix_time = create_timestamp()
         datetime = ts_to_date(unix_time)
-        message = ' has disconnected.'
+        status_message = ' has disconnected.'
         leave_room(room)
         # TODO
         # Check ZMQ buffer for newer messages
         # that have not been emitted
         zmq_buffer = next(c.next_message())
-        
+    
         if zmq_buffer:
             zmq_timestamp = zmq_buffer["timestamp"]
 
             if zmq_timestamp < unix_time:
                 emit("message", {"msg": message["data"]}, room=message["room"], namespace="/chat")    
+
+        while True:
+            payload = next(c.next_message())
+            if payload:
+                payload = payload.split('|')
+                message = json.loads(decrypt(payload[0], c.secret))
+                digest = decrypt(payload[1], c.secret)
+                if verify(json.dumps(message), digest) and message["timestamp"] < unix_time:
+                    new_message = "%s: %s: %s" % (ts_to_date(message["timestamp"]), message["username"], message["message"])
+                    emit("message", {"msg": new_message}, room=message["room"])
+                else:
+                    break
+            else:
+                break  
         # TODO
         # Synchronise messages here
         json_string = {
             'username': username,
             'timestamp': unix_time,
-            'message': message,
+            'message': status_message,
             'room': room,
         }
+        encrypted_json = encrypt(json.dumps(json_string), c.secret)
+        encrypted_digest = encrypt(sha1(json.dumps(json_string)), c.secret)
         c.zmq.publish(encrypted_json + "|" + encrypted_digest)
         
         #Insert data to local database
-        db.insert_message(user=username, ts=unix_time, message=message, room=room)
+        db.insert_message(user=username, ts=unix_time, message=status_message, room=room)
 
-        emit('status', {'msg': datetime + ": " + username + message}, room=room)
+        emit('status', {'msg': datetime + ": " + username + status_message}, room=room)
 
 @socketio.on('connect', namespace='/chat')
 def test_connect():
