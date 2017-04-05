@@ -22,11 +22,18 @@ app.register_blueprint(main)
 socketio = SocketIO(app)
 thread = None
 
-c = Connector()
-c.connect()
+c = None
 
 
 def background_thread():
+    global c
+    if not c:
+        print("here")
+        c = Connector()
+        print("where")
+        c.connect()
+
+    print("there")
     while True:
         socketio.sleep(1)
 
@@ -61,19 +68,20 @@ def joined(message):
     # Check ZMQ buffer for newer messages
     # that have not been emitted
     
-    while True:
-        payload = next(c.next_message())
-        if payload:
-            payload = payload.split('|')
-            message = json.loads(decrypt(payload[0], c.secret))
-            digest = decrypt(payload[1], c.secret)
-            if verify(json.dumps(message), digest) and message["timestamp"] < unix_time:
-                new_message = "%s: %s: %s" % (ts_to_date(message["timestamp"]), message["username"], message["message"])
-                emit("message", {"msg": new_message}, room=message["room"])
+    if c:
+        while True:
+            payload = next(c.next_message())
+            if payload:
+                payload = payload.split('|')
+                message = json.loads(decrypt(payload[0], c.secret))
+                digest = decrypt(payload[1], c.secret)
+                if verify(json.dumps(message), digest) and message["timestamp"] < unix_time:
+                    new_message = "%s: %s: %s" % (ts_to_date(message["timestamp"]), message["username"], message["message"])
+                    emit("message", {"msg": new_message}, room=message["room"])
+                else:
+                    break
             else:
                 break
-        else:
-            break
     
     
     # TODO
@@ -84,15 +92,16 @@ def joined(message):
     
     # TODO
     # Synchronise messages here
-    json_string = {
-        'username': username,
-        'timestamp': unix_time,
-        'message': status_message,
-        'room': room,
-    }
-    encrypted_json = encrypt(json.dumps(json_string), c.secret)
-    encrypted_digest = encrypt(sha1(json.dumps(json_string)), c.secret)
-    c.zmq.publish(encrypted_json + "|" + encrypted_digest)
+    if c:
+        json_string = {
+            'username': username,
+            'timestamp': unix_time,
+            'message': status_message,
+            'room': room,
+        }
+        encrypted_json = encrypt(json.dumps(json_string), c.secret)
+        encrypted_digest = encrypt(sha1(json.dumps(json_string)), c.secret)
+        c.zmq.publish(encrypted_json + "|" + encrypted_digest)
 
     #Insert data to local database
     db.insert_message(user=username, ts=unix_time, message=status_message, room=room)
