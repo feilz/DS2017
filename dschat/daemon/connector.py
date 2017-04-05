@@ -5,6 +5,7 @@ import socket
 import argparse
 import multiprocessing
 
+from dschat.util.crypto import *
 from dschat.util.timeutils import *
 from dschat.daemon.zmq_connector import ZMQ
 
