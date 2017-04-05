@@ -33,6 +33,7 @@ def background_thread():
         while True:
             payload = next(c.next_message())
             if payload:
+                payload = payload.split('|')
                 message = json.loads(decrypt(payload[0], c.secret))
                 digest = decrypt(payload[1], c.secret)
                 if verify(json.dumps(message), digest):
@@ -62,7 +63,8 @@ def joined(message):
     
     while True:
         payload = next(c.next_message())
-        if message:
+        if payload:
+            payload = payload.split('|')
             message = json.loads(decrypt(payload[0], c.secret))
             digest = decrypt(payload[1], c.secret)
             if verify(json.dumps(message), digest) and message["timestamp"] < unix_time:
@@ -113,7 +115,8 @@ def text(message):
     # that have not been emitted
     while True:
         payload = next(c.next_message())
-        if message:
+        if payload:
+            payload = payload.split('|')
             message = json.loads(decrypt(payload[0], c.secret))
             digest = decrypt(payload[1], c.secret)
             if verify(json.dumps(message), digest) and message["timestamp"] < unix_time:
@@ -168,7 +171,8 @@ def left(message):
 
     while True:
         payload = next(c.next_message())
-        if message:
+        if payload:
+            payload = payload.split('|')
             message = json.loads(decrypt(payload[0], c.secret))
             digest = decrypt(payload[1], c.secret)
             if verify(json.dumps(message), digest) and message["timestamp"] < unix_time:
@@ -219,7 +223,8 @@ def disconnected():
 
         while True:
             payload = next(c.next_message())
-            if message:
+            if payload:
+                payload = payload.split('|')
                 message = json.loads(decrypt(payload[0], c.secret))
                 digest = decrypt(payload[1], c.secret)
                 if verify(json.dumps(message), digest) and message["timestamp"] < unix_time:
