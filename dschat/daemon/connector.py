@@ -63,8 +63,8 @@ class Connector():
             with self.lock:
                 for node in self.nodes:
                     print("ZMQ connecting to %s" % node[0])
-                    self.zmq.connectsub((node[0], self.zmq_pub_port))
-                    self.nodes.remove(node)
+                    if self.zmq.connectsub((node[0], self.zmq_pub_port)):
+                        self.nodes.remove(node)
             time.sleep(1)
 
 
@@ -168,7 +168,8 @@ class Connector():
                                 print(msg)
                                 print("AAAAAAA")
                                 ls.sendto(magic + "|" + discovery+"|"+"%d" %self.starttime, ("10.1.64.255", self.broadcast_port))
-                                self.nodes.append(addr)
+                                with self.lock:
+                                    self.nodes.append(addr)
             except socket.error as e:
                 time.sleep(1)
                 pass

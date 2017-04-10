@@ -8,13 +8,17 @@ class ZMQ:
         self.pub = self.context.socket(zmq.PUB)
         self.pub.bind("tcp://%s:%s" % (ip, port))
         self.sub = self.context.socket(zmq.SUB)
-        
+        self.sub.setsockopt(zmq.SUBSCRIBE, "")
+
     def publish(self, msg):
         self.pub.send(msg)
 
     def connectsub(self, addr):
-        self.sub.connect("tcp://%s:%s" %(addr[0], addr[1]))
-        self.sub.setsockopt(zmq.SUBSCRIBE, "")
+        try:
+            self.sub.connect("tcp://%s:%s" %(addr[0], addr[1]))
+            return True
+        except zmq.socket.error:
+            return False
 
     #def __exit___(self):
     #	self.context.term()
