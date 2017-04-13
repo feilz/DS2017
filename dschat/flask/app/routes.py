@@ -1,16 +1,17 @@
 
 import os
-
+import logging
 from flask import Blueprint, session, render_template, make_response, request, url_for, redirect
 from dschat.flask.app.forms.login_form import LoginForm
 
 
 main = Blueprint("main", __name__, template_folder=os.path.join(os.getcwd(), "dschat/flask/app/templates"))
-
+log = logging.getLogger("dschat")
 
 @main.route('/', methods=['GET', 'POST'])
 def index():
     """"Login form to enter a room."""
+    log.info("Incoming conncetion from %s" % request.remote_addr)
     form = LoginForm()
     if form.validate_on_submit():
         session['name'] = form.name.data
@@ -30,5 +31,4 @@ def chat():
     if name == '' or room == '':
         return redirect(url_for('.index'))
     response = make_response(render_template('chat.html', name=name, room=room))
-    response.set_cookie('usernick', session.get('name', ''))
     return response

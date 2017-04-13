@@ -31,7 +31,6 @@
                 });
                 socket.on('connect_error', function(e) {
                     // If server disconnects, force to mainpage
-                    console.log("it works");
                     socket.disconnect();
                     window.location.href = "{{ url_for('.index') }}";
                 });

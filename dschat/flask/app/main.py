@@ -2,6 +2,8 @@
 from gevent import monkey
 monkey.patch_all()
 
+import logging
+
 import json
 from threading import Thread
 from flask import Flask, render_template, session, request, g
@@ -13,6 +15,7 @@ from dschat.util.timeutils import *
 from dschat.db.database import Database
 from dschat.util.crypto import *
 
+log = logging.getLogger("dschat")
 
 db = Database()
 
@@ -63,6 +66,8 @@ def joined(message):
     unix_time = create_timestamp()
     datetime = ts_to_date(unix_time)
     status_message = ' has entered the room.'
+
+    log.info("User %s connected to room %s from ip %s" % (username, room, request.remote_addr))
 
     # TODO
     # Check ZMQ buffer for newer messages
@@ -167,7 +172,7 @@ def left(message):
     datetime = ts_to_date(unix_time)
     status_message = ' has left the room.'
     leave_room(room)
-    
+    log.info("User %s from ip %s has left room %s" % (username, request.remote_addr, room))
     # TODO
     # Check ZMQ buffer for newer messages
     # that have not been emitted
@@ -214,6 +219,7 @@ def disconnected():
         datetime = ts_to_date(unix_time)
         status_message = ' has disconnected.'
         leave_room(room)
+        log.info("User %s from ip %s has disconnected" % (username, request.remote_addr))
         # TODO
         # Check ZMQ buffer for newer messages
         # that have not been emitted  
@@ -254,6 +260,7 @@ def test_connect():
     global thread
 
     if not thread:
+
         thread = socketio.start_background_task(target=background_thread)
         #thread = Thread(target=background_thread)
         #thread.start()
