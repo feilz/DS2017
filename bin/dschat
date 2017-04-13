@@ -2,6 +2,17 @@
 
 from dschat.flask.app.main import socketio, app
 
+import logging 
+
+logging.basicConfig(filename="/var/log/dschat.log",
+                            filemode='a',
+                            format='%(asctime)s %(name)s [%(levelname)s] %(message)s',
+                            datefmt='%H:%M:%S',
+                            level=logging.DEBUG)
+
+
+log = logging.getLogger("dschat")
 
 if __name__ == "__main__":
+    log.info("Starting socketio application")
     socketio.run(app, host="0.0.0.0")
