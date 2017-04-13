@@ -12,8 +12,10 @@ from dschat.daemon.connector import Connector
 from dschat.util.timeutils import *
 from dschat.db.database import Database
 from dschat.util.crypto import *
+import logging
 
 
+log = logging.getLogger("dschat")
 db = Database()
 
 app = Flask(__name__)
@@ -26,14 +28,18 @@ c = None
 
 
 def background_thread():
+    log.info("Starting background thread...")
     global c
     if not c:
         print("here")
+        log.info("Initializing Connector")
         c = Connector()
         print("where")
         c.connect()
+        log.info("Connector initialized")
 
     print("there")
+    log.info("Starting background thread loop")
     while True:
         socketio.sleep(1)
 
@@ -57,6 +63,8 @@ def background_thread():
 def joined(message):
     """Sent by clients when they enter a room.
     A status message is broadcast to all people in the room."""
+    log.info("JOINED: Socketio join detected")
+    log.info("JOINED: Getting join parameters")
     room = session.get('room')
     join_room(room)
     username = session.get('name')
@@ -67,7 +75,7 @@ def joined(message):
     # TODO
     # Check ZMQ buffer for newer messages
     # that have not been emitted
-    
+    log.info("JOINED: Check ZMQ buffer for messages not yet emitted")
     if c:
         while True:
             payload = next(c.next_message())
@@ -87,25 +95,33 @@ def joined(message):
     # TODO
     # Check if user exists
     # User session management... 
+    log.info("JOINED: Checking if user already in database...")
     if not db.user_exists(username):
+        log.info("JOINED: User not in database, adding user to database")
         db.insert_user(user=username)
     
     # TODO
     # Synchronise messages here
     if c:
+        log.info("JOINED: Creating json string for ZMQ messaging")
         json_string = {
             'username': username,
             'timestamp': unix_time,
             'message': status_message,
             'room': room,
         }
+        log.info("JOINED: Encrypting and hashing json string...")
         encrypted_json = encrypt(json.dumps(json_string), c.secret)
         encrypted_digest = encrypt(sha1(json.dumps(json_string)), c.secret)
+        log.info("JOINED: Encrypting and hashing done.")
+        log.info("JOINED: ZMQ publish")
         c.zmq.publish(encrypted_json + "|" + encrypted_digest)
 
     #Insert data to local database
+    log.info("JOINED: Inserting join message to local database")
     db.insert_message(user=username, ts=unix_time, message=status_message, room=room)
     
+    log.info("JOINED: Emitting join message to chat window")
     emit('status', {'msg': datetime + ": " + username + status_message}, room=room)
 
 
@@ -113,6 +129,8 @@ def joined(message):
 def text(message):
     """Sent by a client when the user entered a new message.
     The message is sent to all people in the room."""
+    log.info("TEXT: Socketio text detected")
+    log.info("TEXT: Getting text parameters")
     room = session.get('room')
     username = session.get('name')
     unix_time = create_timestamp()
@@ -122,6 +140,7 @@ def text(message):
     # TODO
     # Check ZMQ buffer for newer messages
     # that have not been emitted
+    log.info("TEXT: Check ZMQ buffer for messages not yet emitted")
     if c:
         while True:
             payload = next(c.next_message())
@@ -140,19 +159,25 @@ def text(message):
     # TODO
     # Synchronise messages here
     if c:
+        log.info("TEXT: Creating json string for ZMQ messaging")
         json_string = {
             'username': username,
             'timestamp': unix_time,
             'message': status_message,
             'room': room,
         }
+        log.info("TEXT: Encrypting and hashing json string...")
         encrypted_json = encrypt(json.dumps(json_string), c.secret)
         encrypted_digest = encrypt(sha1(json.dumps(json_string)), c.secret)
+        log.info("TEXT: Encrypting and hashing done.")
+        log.info("TEXT: ZMQ publish")
         c.zmq.publish(encrypted_json + "|" + encrypted_digest)
 
     #Insert data to local database
+    log.info("JOINED: Inserting message to local database")
     db.insert_message(user=username, ts=unix_time, message=status_message, room=room)
     
+    log.info("JOINED: Emitting message to chat window")
     emit('message', {'msg': datetime + ": " + username + ':' + status_message}, room=room)
 
 
@@ -160,6 +185,8 @@ def text(message):
 def left(message):
     """Sent by clients when they leave a room.
     A status message is broadcast to all people in the room."""
+    log.info("LEFT: Socketio left detected")
+    log.info("LEFT: Getting left parameters")
     room = session.get('room')
     username = session.get('name')
     session["left"] = True
@@ -171,6 +198,7 @@ def left(message):
     # TODO
     # Check ZMQ buffer for newer messages
     # that have not been emitted
+    log.info("JOINED: Check ZMQ buffer for messages not yet emitted")
     if c:
         while True:
             payload = next(c.next_message())
@@ -189,25 +217,33 @@ def left(message):
     # TODO
     # Synchronise messages here
     if c:
+        log.info("TEXT: Creating json string for ZMQ messaging")
         json_string = {
             'username': username,
             'timestamp': unix_time,
             'message': status_message,
             'room': room,
         }
+        log.info("TEXT: Encrypting and hashing json string...")
         encrypted_json = encrypt(json.dumps(json_string), c.secret)
         encrypted_digest = encrypt(sha1(json.dumps(json_string)), c.secret)
+        log.info("TEXT: Encrypting and hashing done.")
+        log.info("TEXT: ZMQ publish")
         c.zmq.publish(encrypted_json + "|" + encrypted_digest)
     
     #Insert data to local database
+    log.info("JOINED: Inserting leave message to local database")
     db.insert_message(user=username, ts=unix_time, message=status_message, room=room)
 
+    log.info("JOINED: Emitting leave message to chat window")
     emit('status', {'msg': datetime + ": " + username + status_message}, room=room)
 
 @socketio.on('disconnect', namespace='/chat')
 def disconnected():
     """Called when client is disconnected by accident or by browser closing."""
     if session.get('left') is None:
+        log.info("LEFT: Socketio disconnect detected")
+        log.info("LEFT: Getting disconnect parameters")
         room = session.get('room')
         username = session.get('name')
         unix_time = create_timestamp()
@@ -217,6 +253,7 @@ def disconnected():
         # TODO
         # Check ZMQ buffer for newer messages
         # that have not been emitted  
+        log.info("JOINED: Check ZMQ buffer for messages not yet emitted")
         if c:
             while True:
                 payload = next(c.next_message())
@@ -234,19 +271,25 @@ def disconnected():
         # TODO
         # Synchronise messages here
         if c:
+            log.info("TEXT: Creating json string for ZMQ messaging")
             json_string = {
                 'username': username,
                 'timestamp': unix_time,
                 'message': status_message,
                 'room': room,
             }
+            log.info("TEXT: Encrypting and hashing json string...")
             encrypted_json = encrypt(json.dumps(json_string), c.secret)
             encrypted_digest = encrypt(sha1(json.dumps(json_string)), c.secret)
+            log.info("TEXT: Encrypting and hashing done.")
+            log.info("TEXT: ZMQ publish")
             c.zmq.publish(encrypted_json + "|" + encrypted_digest)
         
         #Insert data to local database
+        log.info("JOINED: Inserting disconnect message to local database")
         db.insert_message(user=username, ts=unix_time, message=status_message, room=room)
 
+        log.info("JOINED: Emitting disconnect message to chat window")
         emit('status', {'msg': datetime + ": " + username + status_message}, room=room)
 
 @socketio.on('connect', namespace='/chat')
