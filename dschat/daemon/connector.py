@@ -37,6 +37,7 @@ class Connector():
         self.ip = self.args["ip"]
         self.secret = self.args["secret"]
         if self.secret:
+            log.info("Encryption mode enabled")
             self.secret = build_secret_key(self.secret)
 
         self.zmq = ZMQ(self.ip, self.zmq_pub_port)
@@ -70,6 +71,7 @@ class Connector():
         #_pool = Pool(10)
         #_pool.apply_async(func=self.connectToNodes)
         #_pool.apply_async(func=self.backgroundListener,args=(bs,ls))
+        log.info("Connecting to discovered nodes")
         nodeConnector=gevent.spawn(self.connectToNodes)
         bgListener=gevent.spawn(self.backgroundListener,bs,ls)
         print("AAAAAAA")
@@ -84,6 +86,7 @@ class Connector():
             with self.lock:
                 for node in self.nodes:
                     print("ZMQ connecting to %s" % node[0])
+                    log.info("Starting connecting to address %s" %(node[0]))
                     if self.zmq.connectsub((node[0], self.zmq_pub_port)):
                         self.nodes.remove(node)
             time.sleep(1)
@@ -105,6 +108,7 @@ class Connector():
             self._exit(1)
 
     def broadcast(self):
+        log.info("Starting initial broadcasting")
         bs = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         bs.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         bs.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -136,7 +140,7 @@ class Connector():
 
                 try:
                     data, addr = bs.recvfrom(self.broadcast_buffer)
-
+                    log.info("Found node %s" %addr[0])
                     if (data, addr):
                         print(data)
                         print(addr)
@@ -149,6 +153,7 @@ class Connector():
                             if addr[0] != self.ip:
                                 if addr not in nodes:
                                     with self.lock:
+                                        log.info("Ńode added to list")
                                         nodes.append(addr)
                                 #zmqhandlers.connectsub(addr)
                                 #print("FOUND NEW NODE AT %s" % message[2])
@@ -168,6 +173,7 @@ class Connector():
     def backgroundListener(self,bs,ls):
         magic="DEADBEEF"
         discovery="whoismaster|%s" %self.ip
+        log.info("Initializing backgroundlistener for new nodes")
         while self.running:
             print("HERE")
             try:
@@ -194,6 +200,7 @@ class Connector():
             except socket.error as e:
                 time.sleep(1)
                 pass
+        log.info("BackgroundListener shutting down")
         ls.shutdown()
         ls.close()
         bs.shutdown()
