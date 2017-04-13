@@ -4,6 +4,7 @@ import time
 import socket
 import argparse
 import multiprocessing
+from gevent import spawn
 
 from dschat.util.crypto import *
 from dschat.util.timeutils import *
@@ -53,11 +54,13 @@ class Connector():
         if not nodes:
             ls, bs, self.nodes = self.broadcast()
 
-        nodeConnector=multiprocessing.Process(target=self.connectToNodes)
-        nodeConnector.start()
-        bgListener=multiprocessing.Process(target=self.backgroundListener,args=(bs,ls,))
-        bgListener.start()
-
+        #nodeConnector=multiprocessing.Process(target=self.connectToNodes)
+        #nodeConnector.start()
+        #bgListener=multiprocessing.Process(target=self.backgroundListener,args=(bs,ls,))
+        #bgListener.start()
+        nodeConnector=spawn(self.connectToNodes)
+        bgListener=spawn(self.backgroundListener,args=(bs,ls,))
+        
     def connectToNodes(self):
         while self.running:
             with self.lock:
