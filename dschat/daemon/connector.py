@@ -1,18 +1,27 @@
+from gevent import monkey
+monkey.patch_all()
+
+import gevent
+from gevent.pool import Pool
+
 import sys
 import zmq
 import time
 import socket
 import argparse
 import multiprocessing
-from gevent import spawn
+import logging
 
 from dschat.util.crypto import *
 from dschat.util.timeutils import *
 from dschat.daemon.zmq_connector import ZMQ
 
+log = logging.getLogger("dschat")
+
 
 class Connector():
     def __init__(self):
+        log.info("Initializing Connector")
         self.starttime=create_timestamp()
         self.running = True
         
@@ -58,8 +67,17 @@ class Connector():
         #nodeConnector.start()
         #bgListener=multiprocessing.Process(target=self.backgroundListener,args=(bs,ls,))
         #bgListener.start()
-        nodeConnector=spawn(self.connectToNodes)
-        bgListener=spawn(self.backgroundListener,args=(bs,ls,))
+        #_pool = Pool(10)
+        #_pool.apply_async(func=self.connectToNodes)
+        #_pool.apply_async(func=self.backgroundListener,args=(bs,ls))
+        nodeConnector=gevent.spawn(self.connectToNodes)
+        bgListener=gevent.spawn(self.backgroundListener,bs,ls)
+        print("AAAAAAA")
+        gevent.sleep(0)
+        #_pool.join()
+        #nodeConnector.join()
+        #bgListener.join()
+        print("BBBBBBB")
         
     def connectToNodes(self):
         while self.running:
@@ -102,7 +120,7 @@ class Connector():
         discovery = "whoismaster|%s" % self.ip
 
         counter = 0
-        max_tries = 3
+        max_tries = 8
 
         nodes = []
 
