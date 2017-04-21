@@ -75,7 +75,7 @@ class Connector():
         gevent.sleep(0)
         #_pool.join()
         #nodeConnector.join()
-        #bgListener.join()"""
+        #bgListener.join()"""   
         print("BBBBBBB")
         
     def connectToNodes(self):
