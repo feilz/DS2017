@@ -8,8 +8,8 @@ class Redis:
 
 	def __init__(self,ip,port):
 		log.info("Initializing redis-pubsub")
-		self.r = redis.StrictRedis({'host':ip,'port':port,'db':0})
-		self.s = r.pubsub()
+		self.r = redis.StrictRedis(host=ip,port=port,db=0)
+		self.s = self.r.pubsub()
 
 	def publish(self,room,msg):
 		self.r.publish(room,msg)

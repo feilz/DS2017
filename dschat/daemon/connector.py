@@ -1,4 +1,4 @@
- from gevent import monkey
+from gevent import monkey
 monkey.patch_all()
 
 import gevent
@@ -53,8 +53,17 @@ class Connector():
     def next_message(self):
         while True:
             time.sleep(0.1)
-            message = self.redis.s.get_message()
-            yield message
+
+            try:
+                message = self.redis.s.get_message()
+            except AttributeError:
+                yield None
+
+            if not message or message["data"] == 1L:
+                yield None
+
+            else:
+                yield message["data"]
 
 
     def connect(self, nodes=None):

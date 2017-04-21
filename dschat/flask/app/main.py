@@ -82,6 +82,7 @@ def joined(message):
     # that have not been emitted
     log.info("JOINED: Check ZMQ buffer for messages not yet emitted")
     if c:
+        c.redis.subscribe(room)
         while True:
             payload = next(c.next_message())
             if payload:
