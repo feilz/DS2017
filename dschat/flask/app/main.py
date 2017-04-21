@@ -65,7 +65,7 @@ def joined(message):
     status_message = ' has entered the room.'
 
     # TODO
-    # Check ZMQ buffer for newer messages
+    # Check redis buffer for newer messages
     # that have not been emitted
     
     if c:
@@ -101,7 +101,7 @@ def joined(message):
         }
         encrypted_json = encrypt(json.dumps(json_string), c.secret)
         encrypted_digest = encrypt(sha1(json.dumps(json_string)), c.secret)
-        c.zmq.publish(encrypted_json + "|" + encrypted_digest)
+        c.redis.publish(room,encrypted_json + "|" + encrypted_digest)
 
     #Insert data to local database
     db.insert_message(user=username, ts=unix_time, message=status_message, room=room)
@@ -120,7 +120,7 @@ def text(message):
     status_message = message['msg']
     
     # TODO
-    # Check ZMQ buffer for newer messages
+    # Check redis buffer for newer messages
     # that have not been emitted
     if c:
         while True:
@@ -148,7 +148,7 @@ def text(message):
         }
         encrypted_json = encrypt(json.dumps(json_string), c.secret)
         encrypted_digest = encrypt(sha1(json.dumps(json_string)), c.secret)
-        c.zmq.publish(encrypted_json + "|" + encrypted_digest)
+        c.redis.publish(room,encrypted_json + "|" + encrypted_digest)
 
     #Insert data to local database
     db.insert_message(user=username, ts=unix_time, message=status_message, room=room)
@@ -169,7 +169,7 @@ def left(message):
     leave_room(room)
     
     # TODO
-    # Check ZMQ buffer for newer messages
+    # Check redis buffer for newer messages
     # that have not been emitted
     if c:
         while True:
@@ -197,7 +197,7 @@ def left(message):
         }
         encrypted_json = encrypt(json.dumps(json_string), c.secret)
         encrypted_digest = encrypt(sha1(json.dumps(json_string)), c.secret)
-        c.zmq.publish(encrypted_json + "|" + encrypted_digest)
+        c.redis.publish(room,encrypted_json + "|" + encrypted_digest)
     
     #Insert data to local database
     db.insert_message(user=username, ts=unix_time, message=status_message, room=room)
@@ -215,7 +215,7 @@ def disconnected():
         status_message = ' has disconnected.'
         leave_room(room)
         # TODO
-        # Check ZMQ buffer for newer messages
+        # Check redis buffer for newer messages
         # that have not been emitted  
         if c:
             while True:
@@ -242,7 +242,7 @@ def disconnected():
             }
             encrypted_json = encrypt(json.dumps(json_string), c.secret)
             encrypted_digest = encrypt(sha1(json.dumps(json_string)), c.secret)
-            c.zmq.publish(encrypted_json + "|" + encrypted_digest)
+            c.redis.publish(room,encrypted_json + "|" + encrypted_digest)
         
         #Insert data to local database
         db.insert_message(user=username, ts=unix_time, message=status_message, room=room)

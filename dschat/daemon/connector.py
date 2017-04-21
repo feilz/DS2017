@@ -1,4 +1,4 @@
-from gevent import monkey
+ from gevent import monkey
 monkey.patch_all()
 
 import gevent
@@ -14,7 +14,7 @@ import logging
 
 from dschat.util.crypto import *
 from dschat.util.timeutils import *
-from dschat.daemon.zmq_connector import ZMQ
+from dschat.daemon.redis_connector import Redis 
 
 log = logging.getLogger("dschat")
 
@@ -28,19 +28,20 @@ class Connector():
         self.broadcast_buffer = 1024
         self.broadcast_port = 4000
         self.master=None
-        self.zmq_pub_port=5001
-
+        #self.zmq_pub_port=5001
+        self.redis_port=6379
         self.nodes = []
         self.lock = multiprocessing.Lock()
         self.connectedNodes=[]
         self._parse_args()
-        self.ip = self.args["ip"]
+        #self.ip = self.args["ip"]
+        self.redis_ip='10.1.64.53'
         self.secret = self.args["secret"]
         if self.secret:
             log.info("Encryption mode enabled")
             self.secret = build_secret_key(self.secret)
 
-        self.zmq = ZMQ(self.ip, self.zmq_pub_port)
+        self.redis = Redis(self.redis_ip, self.redis_port)
 
     def __enter__(self):
         #self.broadcast()
@@ -51,17 +52,13 @@ class Connector():
 
     def next_message(self):
         while True:
-            message = None
-
-            try:
-                message = self.zmq.sub.recv(flags=zmq.NOBLOCK)
-            except zmq.Again as e:
-                pass
-           
+            time.sleep(0.1)
+            message = self.redis.s.get_message()
             yield message
 
+
     def connect(self, nodes=None):
-        if not nodes:
+        """if not nodes:
             ls, bs, self.nodes = self.broadcast()
 
         #nodeConnector=multiprocessing.Process(target=self.connectToNodes)
@@ -78,7 +75,7 @@ class Connector():
         gevent.sleep(0)
         #_pool.join()
         #nodeConnector.join()
-        #bgListener.join()
+        #bgListener.join()"""
         print("BBBBBBB")
         
     def connectToNodes(self):
