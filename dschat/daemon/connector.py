@@ -133,13 +133,13 @@ class Connector():
         discovery = "ONLINE|%s" % self.ip
 
         while self.running:
+            time.sleep(0.5)
+
             try:
                 ls.sendto(magic + "|" + discovery+"|"+"%d" % create_timestamp(), ("10.1.64.255", self.broadcast_port))
             except socket.error as e:
                 print(e)
                 self._exit(1)
-
-            time.sleep(1)
 
             try:
                 data, addr = bs.recvfrom(self.broadcast_buffer)
@@ -151,24 +151,16 @@ class Connector():
                         if message[1] == "ONLINE":
                             if addr[0] != self.ip:
                                 if addr[0] not in self.nodes.keys():
-                                    with self.lock:
                                         log.info("Ńode %s added to list" % addr[0])
-                                        # Add timestamp to the node list
-                                        self.nodes[addr[0]] = message[3]
-                                else:
-                                        print("UPDATING TS")
-                                        self.nodes[addr[0]] = message[3]
-                            else:
-                                    print("ELSE")
+
+                                self.nodes[addr[0]] = message[3]
 
             except socket.error as e:
                 pass
 
             for i,j in self.nodes.items():
-                print(j)
-                print(create_timestamp())
-                if int(j) <= int(create_timestamp()) - 15:
-                    log.info("Node %s has not been seen for 15 seconds. Marking host as OFFLINE" % i)
+                if int(j) <= int(create_timestamp()) - 300:
+                    log.info("Node %s has not been seen for 5 minutes. Marking host as OFFLINE" % i)
                     del self.nodes[i]
                     
 
