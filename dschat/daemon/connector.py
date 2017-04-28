@@ -155,6 +155,11 @@ class Connector():
                                         log.info("Ńode %s added to list" % addr[0])
                                         # Add timestamp to the node list
                                         self.nodes[addr[0]] = message[3]
+                                else:
+                                        print("UPDATING TS")
+                                        self.nodes[addr[0]] = message[3]
+                            else:
+                                    print("ELSE")
 
             except socket.error as e:
                 pass
