@@ -125,8 +125,8 @@ def joined(message):
     log.info("JOINED: Inserting join message to local database")
     db.insert_message(user=username, ts=unix_time, message=status_message, room=room)
     
-    log.info("JOINED: Emitting join message to chat window")
-    emit('status', {'msg': datetime + ": " + username + status_message}, room=room)
+    #log.info("JOINED: Emitting join message to chat window")
+    #emit('status', {'msg': datetime + ": " + username + status_message}, room=room)
 
 
 @socketio.on('text', namespace='/chat')
@@ -179,8 +179,8 @@ def text(message):
     log.info("JOINED: Inserting message to local database")
     db.insert_message(user=username, ts=unix_time, message=status_message, room=room)
     
-    log.info("JOINED: Emitting message to chat window")
-    emit('message', {'msg': datetime + ": " + username + ':' + status_message}, room=room)
+    #log.info("JOINED: Emitting message to chat window")
+    #emit('message', {'msg': datetime + ": " + username + ':' + status_message}, room=room)
 
 
 @socketio.on('left', namespace='/chat')
@@ -236,8 +236,8 @@ def left(message):
     log.info("JOINED: Inserting leave message to local database")
     db.insert_message(user=username, ts=unix_time, message=status_message, room=room)
 
-    log.info("JOINED: Emitting leave message to chat window")
-    emit('status', {'msg': datetime + ": " + username + status_message}, room=room)
+    #log.info("JOINED: Emitting leave message to chat window")
+    #emit('status', {'msg': datetime + ": " + username + status_message}, room=room)
 
 @socketio.on('disconnect', namespace='/chat')
 def disconnected():
@@ -289,8 +289,8 @@ def disconnected():
         log.info("JOINED: Inserting disconnect message to local database")
         db.insert_message(user=username, ts=unix_time, message=status_message, room=room)
 
-        log.info("JOINED: Emitting disconnect message to chat window")
-        emit('status', {'msg': datetime + ": " + username + status_message}, room=room)
+     #   log.info("JOINED: Emitting disconnect message to chat window")
+     #   emit('status', {'msg': datetime + ": " + username + status_message}, room=room)
 
 @socketio.on('connect', namespace='/chat')
 def test_connect():
