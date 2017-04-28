@@ -35,7 +35,7 @@ class Connector():
         self.connectedNodes=[]
         self._parse_args()
         #self.ip = self.args["ip"]
-        self.redis_ip='10.1.64.53'
+        self.redis_ip = self.args["redis"]
         self.secret = self.args["secret"]
         if self.secret:
             log.info("Encryption mode enabled")
@@ -106,6 +106,7 @@ class Connector():
         parser = argparse.ArgumentParser(prog="dschat", add_help=True)
         parser.add_argument("-d", "--debug", action="store_true", help="Enable debug")
         parser.add_argument("-i", "--ip", help="Bind to IP address")
+        parser.add_argument("-r", "--redis", help="Redis server IP address")
         parser.add_argument("-s", "--secret", help="Shared secret")
         self.args = vars(parser.parse_args())
 

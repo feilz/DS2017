@@ -16,3 +16,4 @@ greenlet>=0.4.2
 WTForms>=1.0.5
 sqlalchemy
 gevent
+redis
