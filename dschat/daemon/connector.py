@@ -30,11 +30,11 @@ class Connector():
         self.master=None
         #self.zmq_pub_port=5001
         self.redis_port=6379
-        self.nodes = []
+        self.nodes = {}
         self.lock = multiprocessing.Lock()
         self.connectedNodes=[]
         self._parse_args()
-        #self.ip = self.args["ip"]
+        self.ip = self.args["ip"]
         self.redis_ip = self.args["redis"]
         self.secret = self.args["secret"]
         if self.secret:
@@ -67,6 +67,8 @@ class Connector():
 
 
     def connect(self, nodes=None):
+        _broadcast=multiprocessing.Process(target=self.broadcast)
+        _broadcast.start()
         """if not nodes:
             ls, bs, self.nodes = self.broadcast()
 
@@ -128,54 +130,42 @@ class Connector():
         ls.bind((self.ip, self.broadcast_port))
 
         magic = "DEADBEEF"
-        discovery = "whoismaster|%s" % self.ip
-
-        counter = 0
-        max_tries = 8
-
-        nodes = []
+        discovery = "ONLINE|%s" % self.ip
 
         while self.running:
-            while counter < max_tries:
-                try:
-                    ls.sendto(magic + "|" + discovery+"|"+"%d" %self.starttime, ("10.1.64.255", self.broadcast_port))
-                except socket.error as e:
-                    print(e)
-                    self._exit(1)
+            try:
+                ls.sendto(magic + "|" + discovery+"|"+"%d" % create_timestamp(), ("10.1.64.255", self.broadcast_port))
+            except socket.error as e:
+                print(e)
+                self._exit(1)
 
-                time.sleep(1)
+            time.sleep(1)
 
-                try:
-                    data, addr = bs.recvfrom(self.broadcast_buffer)
-                    log.info("Found node %s" %addr[0])
-                    if (data, addr):
-                        print(data)
-                        print(addr)
+            try:
+                data, addr = bs.recvfrom(self.broadcast_buffer)
 
-                    if data:
-                        message = data.split("|")
+                if data:
+                    message = data.split("|")
 
-                        if message[0] == magic and message[1] == "whoismaster":
-                            print(message)
+                    if message[0] == magic:
+                        if message[1] == "ONLINE":
                             if addr[0] != self.ip:
-                                if addr not in nodes:
+                                if addr[0] not in self.nodes.keys():
                                     with self.lock:
-                                        log.info("Ńode added to list")
-                                        nodes.append(addr)
-                                #zmqhandlers.connectsub(addr)
-                                #print("FOUND NEW NODE AT %s" % message[2])
-                                #ls.sendto("HELLO THERE", addr)
+                                        log.info("Ńode %s added to list" % addr[0])
+                                        # Add timestamp to the node list
+                                        self.nodes[addr[0]] = message[3]
 
-                except socket.error as e:
-                    pass
+            except socket.error as e:
+                pass
 
-                counter += 1
-                
-            print(nodes)
-            counter = 0
-
-            if nodes:
-                return ls,bs,nodes
+            for i,j in self.nodes.items():
+                print(j)
+                print(create_timestamp())
+                if int(j) <= int(create_timestamp()) - 15:
+                    log.info("Node %s has not been seen for 15 seconds. Marking host as OFFLINE" % i)
+                    del self.nodes[i]
+                    
 
     def backgroundListener(self,bs,ls):
         magic="DEADBEEF"
